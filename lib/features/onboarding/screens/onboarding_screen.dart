@@ -30,8 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "icon": Icons.lightbulb_outline,
       "title": "Recibe recomendaciones y aprende",
-      "description":
-          "Obtén consejos personalizados y mejora tu salud financiera.",
+      "description": "",
     },
   ];
 

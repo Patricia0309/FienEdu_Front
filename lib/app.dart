@@ -6,7 +6,8 @@ import 'features/auth/screens/signin_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
-//import 'features/initial_setup/screens/initial_setup_screen.dart';
+import 'features/inicial_setup/screens/initial_setup_screen.dart';
+import 'features/main_app/screens/main_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -22,12 +23,12 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.onboarding,
       routes: {
         AppRoutes.onboarding: (context) => const OnboardingScreen(),
-        AppRoutes.welcome: (context) =>
-            const WelcomeScreen(), // <-- Ruta actualizada
+        AppRoutes.welcome: (context) => const WelcomeScreen(), 
         AppRoutes.signup: (context) => const SignUpScreen(),
         AppRoutes.signin: (context) => const SignInScreen(),
         AppRoutes.profileSetup: (context) => const ProfileSetupScreen(),
-        //AppRoutes.initialSetup: (context) => const InitialSetupScreen(),
+        AppRoutes.initialSetup: (context) => const InitialSetupScreen(),
+        AppRoutes.dashboard: (context) => const MainScreen(),
       },
     );
   }
