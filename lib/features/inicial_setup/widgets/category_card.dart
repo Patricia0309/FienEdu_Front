@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart'; // <-- 1. IMPORTA EL NUEVO PAQUETE
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 
@@ -35,18 +36,31 @@ class CategoryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
+            // 2. Quitamos el SingleChildScrollView de aquí
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(12.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(icon, style: const TextStyle(fontSize: 32), textAlign: TextAlign.center),
-                  const SizedBox(height: 8),
                   Text(
-                    title, 
-                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                    icon,
+                    style: const TextStyle(fontSize: 32),
                     textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  // 3. Reemplazamos Text con AutoSizeText
+                  AutoSizeText(
+                    title,
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2, // Permite que el texto ocupe hasta 2 líneas
+                    minFontSize:
+                        12, // Evita que el texto se haga demasiado pequeño
+                    overflow: TextOverflow
+                        .ellipsis, // Si no cabe en 2 líneas, pone "..."
                   ),
                 ],
               ),
@@ -55,7 +69,11 @@ class CategoryCard extends StatelessWidget {
               top: 4,
               right: 4,
               child: IconButton(
-                icon: Icon(Icons.help_outline, color: Colors.grey.shade500, size: 20),
+                icon: Icon(
+                  Icons.help_outline,
+                  color: Colors.grey.shade500,
+                  size: 20,
+                ),
                 onPressed: onInfoTap,
               ),
             ),

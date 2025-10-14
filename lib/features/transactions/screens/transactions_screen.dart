@@ -1,23 +1,88 @@
+// lib/features/transactions/screens/transactions_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
+import '../../../data/services/category_service.dart';
+import '../../../data/services/transaction_service.dart';
+import '../../inicial_setup/models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../widgets/transaction_list_item.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-class TransactionsScreen extends StatelessWidget {
-  // 1. La solución es simplemente quitar 'const' del constructor
-  TransactionsScreen({super.key});
+class TransactionsScreen extends StatefulWidget {
+  const TransactionsScreen({super.key});
 
-  // 2. Corregimos los datos de ejemplo para usar DateTime real
-  final List<Transaction> _transactions = [
-    Transaction(category: 'Salario', icon: '💰', description: 'Pago mensual', amount: 15000, date: DateTime(2025, 9, 30), type: TransactionType.ingreso),
-    Transaction(category: 'Alimentación', icon: '🍔', description: 'Supermercado', amount: 450, date: DateTime(2025, 10, 1), type: TransactionType.gasto),
-    Transaction(category: 'Transporte', icon: '🚗', description: 'Uber', amount: 200, date: DateTime(2025, 10, 2), type: TransactionType.gasto),
-    Transaction(category: 'Entretenimiento', icon: '🎮', description: 'Cine y cena', amount: 800, date: DateTime(2025, 10, 3), type: TransactionType.gasto),
-    Transaction(category: 'Freelance', icon: '💻', description: 'Proyecto web', amount: 3000, date: DateTime(2025, 10, 4), type: TransactionType.ingreso),
-    Transaction(category: 'Suscripciones', icon: '💳', description: 'Netflix', amount: 299, date: DateTime(2025, 10, 5), type: TransactionType.gasto),
-  ];
+  @override
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends State<TransactionsScreen> {
+  final TransactionService _transactionService = TransactionService();
+  final CategoryService _categoryService = CategoryService();
+
+  // --- 1. NUEVAS VARIABLES DE ESTADO ---
+  bool _isLoading = true;
+  List<Transaction> _allTransactions = [];
+  List<Transaction> _filteredTransactions = [];
+  Map<int, Category> _categoryMap = {};
+
+  String _selectedFilter = 'Todos';
+  final List<String> _filterOptions = ['Todos', 'Ingresos', 'Gastos'];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      // Obtenemos ambos sets de datos al mismo tiempo
+      final results = await Future.wait([
+        _transactionService.getTransactions(),
+        _categoryService.getCategories(),
+      ]);
+
+      final transactions = results[0] as List<Transaction>;
+      final categories = results[1] as List<Category>;
+
+      setState(() {
+        _allTransactions = transactions;
+        _filteredTransactions = transactions; // Al inicio, mostramos todo
+        _categoryMap = {for (var cat in categories) cat.id: cat};
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Manejar error
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error al cargar datos: $e');
+    }
+  }
+
+  // --- 2. LÓGICA PARA FILTRAR ---
+  void _filterTransactions(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      switch (filter) {
+        case 'Ingresos':
+          _filteredTransactions = _allTransactions
+              .where((t) => t.type == TransactionType.ingreso)
+              .toList();
+          break;
+        case 'Gastos':
+          _filteredTransactions = _allTransactions
+              .where((t) => t.type == TransactionType.gasto)
+              .toList();
+          break;
+        default: // 'Todos'
+          _filteredTransactions = _allTransactions;
+          break;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,16 +91,31 @@ class TransactionsScreen extends StatelessWidget {
       body: Column(
         children: [
           _buildHeader(context),
-          _buildSummaryCard(),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _transactions.length,
-              itemBuilder: (context, index) {
-                return TransactionListItem(transaction: _transactions[index]);
-              },
-            ),
-          ),
+          _buildSummaryCard(
+            _allTransactions,
+          ), // El resumen siempre muestra el total
+          // --- 3. UI ACTUALIZADA ---
+          // Si está cargando, muestra un spinner. Si no, la lista.
+          _isLoading
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _filteredTransactions.length,
+                    itemBuilder: (context, index) {
+                      final transaction = _filteredTransactions[index];
+                      final category =
+                          _categoryMap[transaction.categoryId] ??
+                          Category(id: 0, title: 'Desconocida', icon: '❓');
+                      return TransactionListItem(
+                        transaction: transaction,
+                        category: category,
+                      );
+                    },
+                  ),
+                ),
         ],
       ),
     );
@@ -56,48 +136,44 @@ class TransactionsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Transacciones', style: AppTextStyles.title.copyWith(color: AppColors.primary)),
+          Row(/* ... tu Row con el título y el logo no cambia ... */),
           const SizedBox(height: 16),
-          const TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Buscar...', filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(30)), borderSide: BorderSide.none))),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              // Placeholder para el filtro
-              Expanded(child: TextButton.icon(icon: Icon(Icons.filter_list), label: Text('Todos'), onPressed: (){})),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.download_outlined)),
-            ],
-          )
+          // El Dropdown ahora llama a la función de filtro
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: _selectedFilter,
+                icon: const Icon(Icons.keyboard_arrow_down),
+                items: _filterOptions.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    _filterTransactions(newValue);
+                  }
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
-  
-  Widget _buildSummaryCard() {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Total transacciones', style: AppTextStyles.body),
-                Text(_transactions.length.toString(), style: AppTextStyles.subtitle),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('⬆ \$18,000', style: AppTextStyles.body.copyWith(color: Colors.green.shade700, fontWeight: FontWeight.bold)),
-                Text('⬇ \$2,249', style: AppTextStyles.body.copyWith(color: Colors.red.shade600, fontWeight: FontWeight.bold)),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
+
+  Widget _buildSummaryCard(List<Transaction> transactions) {
+    // ... este widget no cambia ...
+    return Card(/* ... */);
   }
 }

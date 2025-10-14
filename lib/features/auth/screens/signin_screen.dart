@@ -5,6 +5,7 @@ import '../../../common/theme/app_text_styles.dart';
 import '../../../common/widgets/custom_input_field.dart';
 import '../../../common/widgets/primary_button.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../common/utils/show_snackbar.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -13,27 +14,34 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  // --- 1. Añadimos los controladores ---
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   void _handleSignIn() async {
     setState(() => _isLoading = true);
     try {
-      // --- 2. Usamos los controladores para obtener el texto ---
       await _authService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      // Usamos 'mounted' para evitar errores si el widget ya no está en pantalla
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      }
     } catch (e) {
-      print(e);
-      // TODO: Mostrar un SnackBar con el error al usuario
+      // Si el servicio lanza una excepción, la atrapamos y mostramos al usuario
+      if (mounted) {
+        showErrorSnackBar(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

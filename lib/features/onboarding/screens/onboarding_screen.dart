@@ -30,7 +30,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "icon": Icons.lightbulb_outline,
       "title": "Recibe recomendaciones y aprende",
-      "description": "",
+      "description":
+          "Obtén consejos personalizados y accede a microcontenidos.",
     },
   ];
 
@@ -82,8 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               // ---LOGO ---
               const SizedBox(height: 5),
-              SvgPicture.asset('assets/img/svg/Logo.svg', height: 220),
-              const SizedBox(height: 10),
+              SvgPicture.asset('assets/img/svg/Logo.svg', height: 180),
               // Contenido deslizable
               Expanded(
                 child: PageView.builder(

@@ -12,7 +12,8 @@ class DashboardActionsGrid extends StatelessWidget {
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       shrinkWrap: true, // Para que el GridView no ocupe espacio infinito
-      physics: const NeverScrollableScrollPhysics(), // Para que no haga scroll por sí mismo
+      physics:
+          const NeverScrollableScrollPhysics(), // Para que no haga scroll por sí mismo
       children: [
         _buildActionCard(
           icon: Icons.star_outline,
@@ -25,10 +26,7 @@ class DashboardActionsGrid extends StatelessWidget {
           title: 'Aprender',
           subtitle: 'Microcontenidos',
         ),
-        _buildActionCard(
-          icon: Icons.refresh,
-          title: 'Actualizar análisis',
-        ),
+        _buildActionCard(icon: Icons.refresh, title: 'Actualizar análisis'),
         _buildActionCard(
           icon: Icons.visibility_outlined,
           title: 'Ver...', // Placeholder
@@ -37,8 +35,14 @@ class DashboardActionsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard({required IconData icon, required String title, String? subtitle, bool showBadge = false}) {
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    bool showBadge = false,
+  }) {
     return Card(
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 4,
       shadowColor: Colors.black12,
@@ -52,7 +56,12 @@ class DashboardActionsGrid extends StatelessWidget {
               children: [
                 Icon(icon, size: 32, color: Colors.grey.shade700),
                 const Spacer(),
-                Text(title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(subtitle, style: AppTextStyles.small),
@@ -67,7 +76,13 @@ class DashboardActionsGrid extends StatelessWidget {
               child: CircleAvatar(
                 radius: 12,
                 backgroundColor: Colors.red,
-                child: Text('3', style: AppTextStyles.small.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(
+                  '3',
+                  style: AppTextStyles.small.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
         ],
