@@ -19,19 +19,20 @@ class _SignInScreenState extends State<SignInScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
-  void _handleSignIn() async {
+  /// 👁️‍🗨️ Estado local para mostrar/ocultar la contraseña
+  bool _obscurePassword = true;
+
+  Future<void> _handleSignIn() async {
     setState(() => _isLoading = true);
     try {
       await _authService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
-      // Usamos 'mounted' para evitar errores si el widget ya no está en pantalla
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
       }
     } catch (e) {
-      // Si el servicio lanza una excepción, la atrapamos y mostramos al usuario
       if (mounted) {
         showErrorSnackBar(
           context,
@@ -45,7 +46,6 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
-  // --- 3. Limpiamos los controladores ---
   @override
   void dispose() {
     _emailController.dispose();
@@ -84,30 +84,53 @@ class _SignInScreenState extends State<SignInScreen> {
                         style: AppTextStyles.body,
                       ),
                       const SizedBox(height: 24),
+
+                      // --- Campo de correo ---
                       CustomInputField(
                         prefixIcon: Icons.email_outlined,
                         labelText: 'Correo electrónico',
-                        controller:
-                            _emailController, // <-- 4. Asignamos el controller
+                        controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 20),
-                      CustomInputField(
-                        prefixIcon: Icons.lock_outline,
-                        labelText: 'Contraseña',
-                        obscureText: true,
-                        controller:
-                            _passwordController, // <-- 4. Asignamos el controller
+
+                      // --- Campo de contraseña con ojito 👁️ ---
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
+
+              // --- Botón inferior ---
               PrimaryButton(
                 text: _isLoading ? 'Iniciando...' : 'Iniciar sesión',
                 onPressed: _isLoading ? null : _handleSignIn,
               ),
+
               const SizedBox(height: 20),
             ],
           ),

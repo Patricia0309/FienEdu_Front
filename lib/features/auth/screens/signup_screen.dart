@@ -7,6 +7,7 @@ import '../../../common/theme/app_text_styles.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
+
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
@@ -14,6 +15,9 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  /// 👁️‍🗨️ Estado local para mostrar/ocultar la contraseña
+  bool _obscurePassword = true;
 
   void _navigateToProfileSetup() {
     Navigator.pushNamed(
@@ -44,16 +48,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          // --- ESTA ES LA ESTRUCTURA CORRECTA Y ROBUSTA ---
           child: Column(
             children: [
-              // --- 1. La sección que se desliza (scroll) ---
+              // --- 1. Sección desplazable ---
               Expanded(
-                // Expanded le da a SingleChildScrollView un tamaño finito para trabajar
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // --- Aquí está todo tu contenido sin cambios ---
                       SvgPicture.asset('assets/img/svg/Logo.svg', height: 220),
                       const SizedBox(height: 24),
                       Text(
@@ -63,11 +64,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Registrate para comenzar tu viaje hacia la educación financiera.',
+                        'Regístrate para comenzar tu viaje hacia la educación financiera.',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.body,
                       ),
                       const SizedBox(height: 24),
+
+                      // --- Campo de correo ---
                       CustomInputField(
                         labelText: 'Correo electrónico',
                         prefixIcon: Icons.email_outlined,
@@ -75,18 +78,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 20),
-                      CustomInputField(
-                        labelText: 'Contraseña',
-                        obscureText: true,
-                        prefixIcon: Icons.lock_outline,
+
+                      // --- Campo de contraseña con ojito 👁️ ---
+                      TextField(
                         controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              // --- 2. La sección del botón (fija abajo) ---
-              // El botón está fuera del scroll, por lo que siempre está visible.
+
+              // --- 2. Botón inferior fijo ---
               const SizedBox(height: 20),
               PrimaryButton(
                 text: 'Continuar',

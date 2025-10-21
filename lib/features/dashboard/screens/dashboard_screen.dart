@@ -10,6 +10,8 @@ import '../../../features/transactions/models/transaction_model.dart';
 import '../widgets/dashboard_actions_grid.dart';
 import '../widgets/perfil_financiero_card.dart';
 import '../widgets/total_mes_card.dart';
+import '../widgets/budget_card.dart';
+import '../widgets/set_budget_modal.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,6 +24,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TransactionService _transactionService = TransactionService();
   final UserService _userService = UserService();
   late Future<Map<String, dynamic>> _dashboardDataFuture;
+
+  void _showSetBudgetModal(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // Allows modal to take more height
+    backgroundColor: Colors.transparent, // Important for rounded corners
+    builder: (context) => const SetBudgetModal(),
+  );
+}
 
   @override
   void initState() {
@@ -108,8 +119,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           return Scaffold(
             appBar: AppBar(
+              automaticallyImplyLeading: false,
               toolbarHeight: 120,
-              backgroundColor: AppColors.element,
+              backgroundColor: AppColors.accent2,
               elevation: 0,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(
@@ -148,10 +160,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   children: [
                     TotalMesCard(
-                      totalIngresos: processedData['totalIngresos'],
+                      presupuestoTotal: processedData['totalIngresos'], // Usamos ingresos como presupuesto por ahora
                       totalGastos: processedData['totalGastos'],
-                      chartData: processedData['chartData'],
                     ),
+                    const SizedBox(height: 16),
+                    BudgetCard(onSetBudgetTap: () => _showSetBudgetModal(context)),
                     const SizedBox(height: 16),
                     const PerfilFinancieroCard(),
                     const SizedBox(height: 16),

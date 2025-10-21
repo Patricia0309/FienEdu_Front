@@ -7,7 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Asegúra
 class ApiService {
   // Asegúrate de que esta URL sea la correcta para tu teléfono
   static const String _baseUrl =
-      'http://192.168.0.7:8000'; // Usa la IP de tu PC
+      //'http:// 192.168.100.179:8000'; // Usa la IP de tu PC
+      'http://10.0.2.2:8000';
   final _storage =
       const FlutterSecureStorage(); // Usamos storage directamente aquí
 
