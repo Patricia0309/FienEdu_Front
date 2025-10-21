@@ -40,13 +40,8 @@ class AnalysisScreen extends StatelessWidget {
                   ),
                 ),
                 SvgPicture.asset(
-                  'assets/img/svg/Logo.1.svg', // <-- TU LOGO AQUÍ
-                  height: 50,
-                  // Nota: Este colorFilter lo pintará de un solo color, si tu logo ya tiene colores, elimina esta línea.
-                  colorFilter: ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
-                  ),
+                  'assets/img/svg/Logo.2.svg', // <-- TU LOGO AQUÍ
+                  height: 60,
                 ),
               ],
             ),

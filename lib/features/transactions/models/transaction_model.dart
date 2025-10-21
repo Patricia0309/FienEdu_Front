@@ -1,5 +1,3 @@
-// lib/features/transactions/models/transaction_model.dart
-
 enum TransactionType { gasto, ingreso }
 
 class Transaction {

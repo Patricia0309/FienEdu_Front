@@ -1,5 +1,3 @@
-// lib/features/transactions/widgets/new_transaction_modal.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../common/theme/app_text_styles.dart';
@@ -240,19 +238,6 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Nota (opcional)',
-                        style: AppTextStyles.body.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomInputField(
-                        controller: _noteController,
-                        labelText: 'Añade una descripción...',
-                        maxLines: 3,
                       ),
                     ],
                   ),

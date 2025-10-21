@@ -6,7 +6,7 @@ import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/user_service.dart';
 import '../models/student_model.dart';
-import '../widgets/user_info_card.dart';
+import '../widgets/user_info_card.dart'; // Make sure this path is correct
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,14 +23,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Al iniciar la pantalla, pedimos los datos del usuario
     _studentFuture = _userService.getMe();
   }
 
   void _handleLogout() async {
-    await _authService.logout();
-    if (mounted) {
-      // Navega a la pantalla de bienvenida y elimina todas las pantallas anteriores
+    // Show confirmation dialog before logging out
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Cierre de Sesión'),
+        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, false), // Return false if cancelled
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, true), // Return true if confirmed
+            child: const Text(
+              'Cerrar Sesión',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Only logout if the user confirmed
+    if (confirmed == true && mounted) {
+      await _authService.logout();
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.welcome,
@@ -41,78 +64,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Use the general in-app background color defined in MainScreen
+    // The Scaffold background here should be transparent if MainScreen sets the color
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: FutureBuilder<Student>(
         future: _studentFuture,
         builder: (context, snapshot) {
-          // --- ESTADO DE CARGA ---
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          // --- ESTADO DE ERROR ---
           if (snapshot.hasError) {
             return Center(
               child: Text('Error al cargar el perfil: ${snapshot.error}'),
             );
           }
-          // --- ESTADO DE ÉXITO ---
           if (snapshot.hasData) {
             final student = snapshot.data!;
+            // Use SingleChildScrollView > Column for the main structure
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  // --- Encabezado ---
-                  SizedBox(
-                    height: 250,
-                    child: Stack(
+                  // --- 1. Fixed Header ---
+                  Container(
+                    width: double.infinity, // Take full width
+                    padding: const EdgeInsets.only(
+                      top: 60,
+                      bottom: 60,
+                    ), // Adjust padding as needed
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent2, // Your desired header color
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(40),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          height: 200,
-                          decoration: const BoxDecoration(
-                            color: AppColors.accent2,
-                            borderRadius: BorderRadius.vertical(
-                              bottom: Radius.circular(40),
-                            ),
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.transparent,
+                          child: SvgPicture.asset(
+                            'assets/img/svg/Logo.2.svg', // Ensure path is correct
+                            height: 150,
                           ),
                         ),
-                        Align(
-                          alignment: Alignment.center,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.white,
-                                child: SvgPicture.asset(
-                                  'assets/img/svg/Logo.2.svg',
-                                  height: 60,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Mi Perfil',
-                                style: AppTextStyles.title.copyWith(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 12),
+                        Text(
+                          'Mi Perfil',
+                          style: AppTextStyles.title.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          'Gestiona tu cuenta',
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.primary.withOpacity(0.7),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  // --- Tarjeta de Información Personal (con datos reales) ---
+                  // --- 2. Overlapping User Info Card ---
                   Transform.translate(
-                    offset: const Offset(0, -50),
-                    child: UserInfoCard(
-                      student: student,
-                    ), // Pasamos el objeto student
+                    offset: const Offset(0, -50), // Pulls the card up
+                    child: UserInfoCard(student: student),
                   ),
 
-                  // --- Tarjeta de Categorías ---
+                  // --- 3. Categories Card (with some negative margin if needed) ---
                   Padding(
+                    // Adjusted horizontal padding, no top padding needed due to overlap
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Container(
                       padding: const EdgeInsets.all(20.0),
@@ -135,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: AppTextStyles.heading,
                           ),
                           const SizedBox(height: 16),
-                          // TODO: Mostrar aquí las categorías favoritas del usuario
+                          // TODO: Display user's favorite categories grid here
                           const Text(
                             'Aquí irá el grid con tus categorías favoritas...',
                           ),
@@ -145,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // --- Botón de Cerrar Sesión ---
+                  // --- 4. Logout Button ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: ElevatedButton.icon(
@@ -161,12 +182,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 30), // Bottom spacing
                 ],
               ),
             );
           }
-          // Estado por defecto
           return const Center(
             child: Text('No se pudo cargar la información del perfil.'),
           );

@@ -1,7 +1,7 @@
 // lib/features/initial_setup/models/category_model.dart
 
 class Category {
-  final int id; // <-- 1. Añadimos el ID
+  final int id;
   final String title;
   final String icon;
   final String description;
@@ -9,22 +9,21 @@ class Category {
   const Category({
     required this.id,
     required this.title,
-    this.icon = '❓', // Damos valores por defecto por si acaso
+    this.icon = '❓',
     this.description = '',
   });
 
-  // 2. "Constructor de fábrica" para crear un objeto Category desde un JSON
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
       id: json['id'],
-      title: json['name'], // El backend usa 'name', nosotros 'title'
-      // Aquí podrías tener una lógica para asignar un emoji basado en el nombre
-      icon: _getIconForCategory(json['name']),
+      title: json['name'],
+      // 2. Usamos el nuevo nombre PÚBLICO de la función
+      icon: getIconForCategory(json['name']),
     );
   }
 
-  // Helper para asignar emojis (puedes expandir esto)
-  static String _getIconForCategory(String name) {
+  // 1. Quitamos el guion bajo para hacer la función PÚBLICA
+  static String getIconForCategory(String name) {
     switch (name.toLowerCase()) {
       case 'hogar y servicios':
         return '🏠';

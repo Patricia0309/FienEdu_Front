@@ -22,11 +22,11 @@ class OnboardingPageContent extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircleAvatar(
-            radius: 40,
+            radius: 30,
             backgroundColor: AppColors.primary.withOpacity(0.05),
             child: Icon(
               iconData, // <-- USA EL ÍCONO RECIBIDO
-              size: 50,
+              size: 40,
               color: AppColors.accent1, // Usa un color de acento
             ),
           ),

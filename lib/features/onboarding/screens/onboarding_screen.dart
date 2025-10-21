@@ -81,27 +81,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Text("Saltar"),
                 ),
               ),
-              // ---LOGO ---
-              const SizedBox(height: 5),
-              SvgPicture.asset('assets/img/svg/Logo.svg', height: 180),
-              // Contenido deslizable
+              // --- 2. Área Central Flexible (Logo + PageView) ---
               Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _onboardingData.length,
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                  itemBuilder: (context, index) => OnboardingPageContent(
-                    // Pasa el ícono desde tu lista de datos
-                    iconData:
-                        _onboardingData[index]['icon']
-                            as IconData, // <-- LÍNEA MODIFICADA
-                    title: _onboardingData[index]['title'] as String,
-                    description:
-                        _onboardingData[index]['description'] as String,
-                  ),
+                // Este Expanded toma todo el espacio entre "Saltar" y los puntos
+                child: Column(
+                  children: [
+                    // Logo con su altura fija
+                    SvgPicture.asset(
+                      'assets/img/svg/logo.svg', // Asegúrate que la ruta sea correcta
+                      height:
+                          180, // Puedes volver a tu altura original (ej: 220 o 250)
+                    ),
+                    const SizedBox(height: 20), // Espacio entre logo y PageView
+                    // PageView dentro de otro Expanded
+                    Expanded(
+                      // Este Expanded toma el espacio restante DESPUÉS del logo
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _onboardingData.length,
+                        onPageChanged: (page) =>
+                            setState(() => _currentPage = page),
+                        itemBuilder: (context, index) => OnboardingPageContent(
+                          iconData: _onboardingData[index]['icon'] as IconData,
+                          title: _onboardingData[index]['title'] as String,
+                          description:
+                              _onboardingData[index]['description'] as String,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // Indicadores (puntitos)
+
+              // --- 3. Controles Inferiores Fijos ---
+              const SizedBox(height: 20),
               // TODO: Extraer a su propio widget en onboarding/widgets/dot_indicator.dart
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -119,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 15),
               // Botón principal reutilizable
               PrimaryButton(
                 text: _currentPage == _onboardingData.length - 1

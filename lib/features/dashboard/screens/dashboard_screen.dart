@@ -1,10 +1,11 @@
-// lib/features/dashboard/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/transaction_service.dart';
+import '../../../data/services/user_service.dart';
+import '../../../features/profile/models/student_model.dart';
 import '../../../features/transactions/models/transaction_model.dart';
 import '../widgets/dashboard_actions_grid.dart';
 import '../widgets/perfil_financiero_card.dart';
@@ -19,20 +20,31 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final TransactionService _transactionService = TransactionService();
-  late Future<List<Transaction>> _transactionsFuture;
+  final UserService _userService = UserService();
+  late Future<Map<String, dynamic>> _dashboardDataFuture;
 
   @override
   void initState() {
     super.initState();
-    _transactionsFuture = _transactionService.getTransactions();
+    _dashboardDataFuture = _fetchDashboardData();
   }
 
-  // --- FUNCIÓN CLAVE PARA PROCESAR LOS DATOS ---
+  Future<Map<String, dynamic>> _fetchDashboardData() async {
+    final results = await Future.wait([
+      _userService.getMe(),
+      _transactionService.getTransactions(),
+    ]);
+    return {
+      'student': results[0] as Student,
+      'transactions': results[1] as List<Transaction>,
+    };
+  }
+
+  // --- ESTA ES LA FUNCIÓN COMPLETA QUE FALTABA ---
   Map<String, dynamic> _processTransactionData(List<Transaction> transactions) {
     double totalIngresos = 0;
     double totalGastos = 0;
 
-    // Mapa para agrupar gastos por día de la semana (0=Lunes, 6=Domingo)
     Map<int, double> dailyExpenses = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
 
     for (var t in transactions) {
@@ -40,13 +52,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         totalIngresos += t.amount;
       } else {
         totalGastos += t.amount;
-        // Agrupamos el gasto en el día de la semana correspondiente
-        dailyExpenses[t.date.weekday - 1] =
-            dailyExpenses[t.date.weekday - 1]! + t.amount;
+        if (t.date.isAfter(DateTime.now().subtract(const Duration(days: 7)))) {
+          dailyExpenses[t.date.weekday - 1] =
+              (dailyExpenses[t.date.weekday - 1] ?? 0) + t.amount;
+        }
       }
     }
 
-    // Convertimos los datos agrupados al formato que espera la gráfica
     final List<BarChartGroupData> chartData = [];
     dailyExpenses.forEach((day, total) {
       chartData.add(
@@ -55,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           barRods: [
             BarChartRodData(
               toY: total,
-              color: AppColors.primary, // Usamos un color base
+              color: AppColors.element,
               width: 15,
               borderRadius: BorderRadius.circular(4),
             ),
@@ -73,51 +85,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(/* ... tu AppBar no cambia ... */),
-      body: FutureBuilder<List<Transaction>>(
-        future: _transactionsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _dashboardDataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
               child: Text('Error al cargar el dashboard: ${snapshot.error}'),
-            );
-          }
-          if (snapshot.hasData) {
-            final transactions = snapshot.data!;
-            // Procesamos los datos justo antes de construir la UI
-            final processedData = _processTransactionData(transactions);
+            ),
+          );
+        }
+        if (snapshot.hasData) {
+          final student = snapshot.data!['student'] as Student;
+          final transactions =
+              snapshot.data!['transactions'] as List<Transaction>;
+          final processedData = _processTransactionData(transactions);
 
-            return SingleChildScrollView(
-              child: Container(
-                color: AppColors.background,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TotalMesCard(
-                        totalIngresos: processedData['totalIngresos'],
-                        totalGastos: processedData['totalGastos'],
-                        chartData: processedData['chartData'],
-                      ),
-                      const SizedBox(height: 16),
-                      const PerfilFinancieroCard(),
-                      const SizedBox(height: 16),
-                      const DashboardActionsGrid(),
-                    ],
-                  ),
+          return Scaffold(
+            appBar: AppBar(
+              toolbarHeight: 120,
+              backgroundColor: AppColors.element,
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(30),
                 ),
               ),
-            );
-          }
-          return const Center(
-            child: Text('Añade tu primera transacción para empezar.'),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hola,',
+                    style: AppTextStyles.title.copyWith(color: Colors.white70),
+                  ),
+                  Text(
+                    '${student.displayName} 👋',
+                    style: AppTextStyles.subtitle.copyWith(color: Colors.white),
+                  ),
+                ],
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    right: 16.0,
+                  ), // Padding a la derecha del logo
+                  child: SvgPicture.asset(
+                    'assets/img/svg/Logo.2.svg',
+                    height: 80,
+                  ),
+                ),
+              ],
+            ),
+            body: SingleChildScrollView(
+              child: Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TotalMesCard(
+                      totalIngresos: processedData['totalIngresos'],
+                      totalGastos: processedData['totalGastos'],
+                      chartData: processedData['chartData'],
+                    ),
+                    const SizedBox(height: 16),
+                    const PerfilFinancieroCard(),
+                    const SizedBox(height: 16),
+                    const DashboardActionsGrid(),
+                  ],
+                ),
+              ),
+            ),
           );
-        },
-      ),
+        }
+        return const Scaffold(
+          body: Center(child: Text('No se pudieron cargar los datos.')),
+        );
+      },
     );
   }
 }

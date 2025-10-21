@@ -17,19 +17,58 @@ class InitialSetupScreen extends StatefulWidget {
 }
 
 class _InitialSetupScreenState extends State<InitialSetupScreen> {
-  // 1. Instanciamos nuestro servicio de categorías
   final CategoryService _categoryService = CategoryService();
-  // 2. Creamos un 'Future' que guardará el resultado de la llamada a la API
   late Future<List<Category>> _categoriesFuture;
 
   final List<Category> _selectedCategories = [];
   bool _isSaving = false;
 
+  // 1. Guardamos las descripciones que nos diste en un mapa
+  final Map<String, String> _categoryDescriptions = {
+    'Hogar y Servicios':
+        'Renta o alojamiento, servicios (luz, agua, gas), internet o telefonía, mantenimiento y limpieza',
+    'Educación':
+        'Colegiatura, libros, materiales de estudio, cursos o certificaciones, copias, impresiones',
+    'Salud y Bienestar':
+        'Seguro médico, consultas, medicamentos, gimnasio o actividad deportiva, terapia o bienestar mental',
+    'Deudas y Obligaciones':
+        'Pago de Tarjeta de Crédito, préstamos (educativos u otros), suscripciones (software, académicas)',
+    'Alimentación': 'Supermercado, comidas fuera, domicilio, antojos o snacks',
+    'Transporte':
+        'Transporte Público, apps de transporte, gasolina, mantenimiento o estacionamiento',
+    'Compras y Cuidado Personal':
+        'Ropa o calzado, peluquería, barbería, productos de aseo, tecnología o gadgets',
+    'Ocio y Vida Social':
+        'Salidas con amigos, suscripciones de entretenimiento hobbies o pasatiempos',
+    'Ahorro e Inversión': '¡Págate a ti primero!',
+    'Gastos Hormiga':
+        'Pequeños gastos diarios no planificados como cafés, propinas, snacks, etc.',
+  };
+
   @override
   void initState() {
     super.initState();
-    // 3. Al iniciar la pantalla, mandamos a buscar las categorías al backend
-    _categoriesFuture = _categoryService.getCategories();
+    _categoriesFuture = _loadAndEnrichCategories();
+  }
+
+  // Nueva función para cargar y "enriquecer" las categorías
+  Future<List<Category>> _loadAndEnrichCategories() async {
+    final categoriesFromApi = await _categoryService.getCategories();
+    // Inyectamos la descripción y el ícono a cada categoría que viene de la API
+    return categoriesFromApi
+        .map(
+          (category) => Category(
+            id: category.id,
+            title: category.title,
+            icon: Category.getIconForCategory(
+              category.title,
+            ), // Re-usamos el helper del modelo
+            description:
+                _categoryDescriptions[category.title] ??
+                'Sin descripción disponible.',
+          ),
+        )
+        .toList();
   }
 
   void _toggleCategory(Category category) {
@@ -42,11 +81,18 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     });
   }
 
-  // Lógica para el botón 'Continuar', ahora llama a la API
   void _handleContinue() async {
+    // 2. Añadimos la validación aquí
+    if (_selectedCategories.isEmpty) {
+      showErrorSnackBar(
+        context,
+        'Por favor, selecciona al menos una categoría.',
+      );
+      return; // Detiene la ejecución si no se seleccionó nada
+    }
+
     setState(() => _isSaving = true);
     try {
-      // Extraemos solo los IDs de las categorías seleccionadas
       final selectedIds = _selectedCategories.map((c) => c.id).toList();
       await _categoryService.updateFavoriteCategories(selectedIds);
 
@@ -84,6 +130,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               ),
             ],
           ),
+          // 3. Ahora el content sí tendrá la descripción
           content: Text(category.description, style: AppTextStyles.body),
           actions: [
             PrimaryButton(
@@ -103,7 +150,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // ... El resto de la UI con el FutureBuilder no cambia...
             children: [
               Text('Personaliza tu experiencia', style: AppTextStyles.title),
               const SizedBox(height: 12),
@@ -112,17 +159,15 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 style: AppTextStyles.body,
               ),
               const SizedBox(height: 20),
-
-              // 4. Usamos un FutureBuilder para manejar los estados de carga de la API
               Expanded(
                 child: FutureBuilder<List<Category>>(
-                  future:
-                      _categoriesFuture, // Le decimos qué 'Future' debe escuchar
+                  future: _categoriesFuture,
                   builder: (context, snapshot) {
                     // --- Caso 1: Los datos todavía están cargando ---
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
+
                     // --- Caso 2: Hubo un error en la conexión ---
                     if (snapshot.hasError) {
                       return Center(
@@ -131,14 +176,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         ),
                       );
                     }
-                    // --- Caso 3: Los datos llegaron con éxito ---
-                    if (snapshot.hasData) {
+
+                    // --- Caso 3: Los datos llegaron con éxito y la lista NO está vacía ---
+                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       final categories = snapshot.data!;
-                      if (categories.isEmpty) {
-                        return const Center(
-                          child: Text('No se encontraron categorías.'),
-                        );
-                      }
                       return GridView.builder(
                         itemCount: categories.length,
                         gridDelegate:
@@ -160,14 +201,18 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         },
                       );
                     }
-                    // --- Caso por defecto (aunque no debería pasar) ---
+
+                    // --- CASO FINAL (Éxito pero sin datos, o cualquier otro estado) ---
+                    // Esta es la línea que probablemente te falta.
+                    // Siempre debe haber un 'return' final como red de seguridad.
                     return const Center(
-                      child: Text('No hay categorías disponibles.'),
+                      child: Text(
+                        'No hay categorías disponibles para seleccionar.',
+                      ),
                     );
                   },
                 ),
               ),
-
               const SizedBox(height: 20),
               PrimaryButton(
                 text: _isSaving ? 'Guardando...' : 'Continuar',

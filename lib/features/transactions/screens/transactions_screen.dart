@@ -1,5 +1,3 @@
-// lib/features/transactions/screens/transactions_screen.dart
-
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
@@ -136,7 +134,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(/* ... tu Row con el título y el logo no cambia ... */),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Movimientos',
+                style: AppTextStyles.subtitle.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              SvgPicture.asset('assets/img/svg/Logo.2.svg', height: 60),
+            ],
+          ),
           const SizedBox(height: 16),
           // El Dropdown ahora llama a la función de filtro
           Container(
@@ -173,7 +182,63 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _buildSummaryCard(List<Transaction> transactions) {
-    // ... este widget no cambia ...
-    return Card(/* ... */);
+    // Calculamos los totales usando la lista completa (sin filtrar)
+    double totalIngresos = transactions
+        .where((t) => t.type == TransactionType.ingreso)
+        .fold(0, (sum, t) => sum + t.amount);
+    double totalGastos = transactions
+        .where((t) => t.type == TransactionType.gasto)
+        .fold(0, (sum, t) => sum + t.amount);
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        8,
+      ), // Ajustamos margen superior
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4, // Añadimos un poco de elevación como en tu diseño
+      shadowColor: Colors.black12,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Total transacciones', style: AppTextStyles.body),
+                // Mostramos el número total de transacciones
+                Text(
+                  transactions.length.toString(),
+                  style: AppTextStyles.subtitle,
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Mostramos los totales calculados
+                Text(
+                  '⬆ \$${totalIngresos.toStringAsFixed(0)}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '⬇ \$${totalGastos.toStringAsFixed(0)}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -1,4 +1,3 @@
-// lib/features/dashboard/widgets/dashboard_actions_grid.dart
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_text_styles.dart';
 
@@ -24,7 +23,7 @@ class DashboardActionsGrid extends StatelessWidget {
         _buildActionCard(
           icon: Icons.library_books_outlined,
           title: 'Aprender',
-          subtitle: 'Microcontenidos',
+          subtitle: 'Contenidos',
         ),
         _buildActionCard(icon: Icons.refresh, title: 'Actualizar análisis'),
         _buildActionCard(
