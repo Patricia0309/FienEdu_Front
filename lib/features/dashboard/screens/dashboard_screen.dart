@@ -12,6 +12,9 @@ import '../widgets/perfil_financiero_card.dart';
 import '../widgets/total_mes_card.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/set_budget_modal.dart';
+import '../../../data/services/budget_service.dart';
+import '../../../features/budgets/models/budget_status_model.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,16 +26,26 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final TransactionService _transactionService = TransactionService();
   final UserService _userService = UserService();
+  final BudgetService _budgetService = BudgetService();
   late Future<Map<String, dynamic>> _dashboardDataFuture;
 
-  void _showSetBudgetModal(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // Allows modal to take more height
-    backgroundColor: Colors.transparent, // Important for rounded corners
-    builder: (context) => const SetBudgetModal(),
-  );
-}
+  void _showSetBudgetModal(BudgetStatus? currentStatus) async {
+     final saved = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => SetBudgetModal(
+            // Pasa los datos del presupuesto actual si existe
+            initialBudgetStatus: currentStatus,
+        ),
+     );
+     // Si el modal devolvió true (se guardó), recarga los datos del dashboard
+     if (saved == true) {
+        setState(() {
+          _dashboardDataFuture = _fetchDashboardData();
+        });
+     }
+  }
 
   @override
   void initState() {
@@ -41,14 +54,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<Map<String, dynamic>> _fetchDashboardData() async {
-    final results = await Future.wait([
-      _userService.getMe(),
-      _transactionService.getTransactions(),
-    ]);
-    return {
-      'student': results[0] as Student,
-      'transactions': results[1] as List<Transaction>,
-    };
+    try {
+      // Usamos Future.wait para las llamadas obligatorias
+      final results = await Future.wait([
+        _userService.getMe(),
+        _transactionService.getTransactions(),
+      ]);
+
+      // La llamada al status del presupuesto puede fallar (404), la hacemos por separado
+      BudgetStatus? budgetStatus;
+      try {
+         budgetStatus = await _budgetService.getBudgetStatus();
+      } catch (e) {
+         print("No se encontró presupuesto activo o hubo un error: $e");
+         // No hacemos nada, budgetStatus seguirá siendo null
+      }
+
+      return {
+        'student': results[0] as Student,
+        'transactions': results[1] as List<Transaction>,
+        'budgetStatus': budgetStatus, // Puede ser null
+      };
+    } catch (e) {
+       print("Error fatal cargando dashboard: $e");
+       rethrow; // Re-lanza para que el FutureBuilder muestre el error
+    }
   }
 
   // --- ESTA ES LA FUNCIÓN COMPLETA QUE FALTABA ---
@@ -115,6 +145,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final student = snapshot.data!['student'] as Student;
           final transactions =
               snapshot.data!['transactions'] as List<Transaction>;
+          final budgetStatus = snapshot.data!['budgetStatus'] as BudgetStatus?;
+
+          print("DEBUG FLUTTER: Received BudgetStatus: budgetStatus?.totalSpent");
+
           final processedData = _processTransactionData(transactions);
 
           return Scaffold(
@@ -136,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: AppTextStyles.title.copyWith(color: Colors.white70),
                   ),
                   Text(
-                    '${student.displayName} 👋',
+                    '${student.displayName ?? 'Usuario'} 👋', 
                     style: AppTextStyles.subtitle.copyWith(color: Colors.white),
                   ),
                 ],
@@ -160,11 +194,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   children: [
                     TotalMesCard(
-                      presupuestoTotal: processedData['totalIngresos'], // Usamos ingresos como presupuesto por ahora
-                      totalGastos: processedData['totalGastos'],
+                      budgetStatus: budgetStatus, // <-- Pasa el objeto completo (puede ser null)
                     ),
                     const SizedBox(height: 16),
-                    BudgetCard(onSetBudgetTap: () => _showSetBudgetModal(context)),
+                    BudgetCard(
+                        budgetStatus: budgetStatus,
+                        onSetBudgetTap: () => _showSetBudgetModal(budgetStatus),
+                    ),
                     const SizedBox(height: 16),
                     const PerfilFinancieroCard(),
                     const SizedBox(height: 16),

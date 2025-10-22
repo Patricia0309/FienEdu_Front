@@ -3,17 +3,23 @@
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
+import '../../budgets/models/budget_status_model.dart';
 
 class BudgetCard extends StatelessWidget {
-  final VoidCallback onSetBudgetTap; // Function to open the modal
-
+  final VoidCallback onSetBudgetTap; 
+  final BudgetStatus? budgetStatus;
   const BudgetCard({
     super.key,
     required this.onSetBudgetTap,
+    this.budgetStatus,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool hasActiveBudget = budgetStatus != null;
+    final String buttonText = hasActiveBudget ? 'Editar Presupuesto' : 'Establecer Presupuesto';
+    final IconData buttonIcon = hasActiveBudget ? Icons.edit_outlined : Icons.add;
+
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
@@ -35,7 +41,7 @@ class BudgetCard extends StatelessWidget {
           OutlinedButton.icon(
             icon: const Icon(Icons.add, color: AppColors.accent1),
             label: Text(
-              'Establecer presupuesto',
+              buttonText, // Texto dinámico
               style: AppTextStyles.body.copyWith(color: AppColors.accent1, fontWeight: FontWeight.w600),
             ),
             onPressed: onSetBudgetTap, // Call the function passed from Dashboard

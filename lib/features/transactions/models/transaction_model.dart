@@ -19,6 +19,16 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+
+    final double amountValue = (json['amount'] as num?)?.toDouble() ?? 0.0;
+    final DateTime dateValue = DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now();
+    final TransactionType typeValue = json['type'] == 'ingreso' 
+        ? TransactionType.ingreso 
+        : TransactionType.gasto;
+    final int categoryIdValue = json['category_id'] as int? ?? 0;
+    final String descriptionValue = json['description'] as String? ?? '';
+
+
     return Transaction(
       id: json['id'],
       amount: json['amount'],
@@ -29,7 +39,7 @@ class Transaction {
           ? TransactionType.ingreso
           : TransactionType.gasto,
       categoryId: json['category_id'],
-      // description puede ser opcional
+      description: descriptionValue,
     );
   }
 }

@@ -8,6 +8,7 @@ import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/profile_setup_screen.dart';
 import 'features/inicial_setup/screens/initial_setup_screen.dart';
 import 'features/main_app/screens/main_screen.dart';
+import 'common/routing/navigator_key.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -18,6 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Fin Edu App',
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
 
       // Define la ruta inicial y el mapa de rutas
       initialRoute: AppRoutes.onboarding,

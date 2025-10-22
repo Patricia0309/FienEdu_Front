@@ -1,8 +1,9 @@
-// lib/data/services/api_service.dart
-
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Asegúrate de importar esto
+import '../../common/routing/navigator_key.dart';
+import '../../common/routing/app_routes.dart';
 
 class ApiService {
   // Asegúrate de que esta URL sea la correcta para tu teléfono
@@ -30,6 +31,47 @@ class ApiService {
       }
     }
     return headers;
+  }
+
+  // --- NUEVA FUNCIÓN PARA MANEJAR EL 401 ---
+  Future<void> _handleUnauthorized() async {
+    // Borra el token inválido del almacenamiento seguro
+    await _storage.delete(key: 'access_token');
+    print('Token inválido eliminado.');
+
+    // Usa la clave global para navegar a la pantalla de bienvenida
+    // y eliminar todas las pantallas anteriores de la pila.
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      AppRoutes.welcome, // Asegúrate que esta sea tu pantalla de login/bienvenida
+      (route) => false, // Elimina todas las rutas anteriores
+    );
+  }
+
+  // --- MANEJO DE ERRORES CENTRALIZADO ---
+  void _handleResponse(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      print(
+        'Error en la petición API: ${response.statusCode} ${response.body}',
+      );
+      // Si el error es 401 (No autorizado)...
+      if (response.statusCode == 401) {
+        // Llama a la función para desloguear y redirigir
+        _handleUnauthorized();
+        // Lanza una excepción específica para que la UI sepa que fue un error de auth
+        throw Exception('Sesión expirada. Por favor, inicia sesión de nuevo.');
+      }
+      try {
+        final responseBody = json.decode(response.body);
+        final errorMessage =
+            responseBody['detail'] ?? 'Ocurrió un error en la petición';
+        throw Exception(errorMessage);
+      } catch (e) {
+        // Si el cuerpo no es JSON válido o no tiene 'detail'
+        throw Exception(
+          'Error ${response.statusCode}: ${response.reasonPhrase}',
+        );
+      }
+    }
   }
 
   // --- MÉTODOS PÚBLICOS PARA GET, POST, PUT, ETC. ---
@@ -76,25 +118,5 @@ class ApiService {
     );
     _handleResponse(response);
     return response;
-  }
-
-  // --- MANEJO DE ERRORES CENTRALIZADO ---
-  void _handleResponse(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      print(
-        'Error en la petición API: ${response.statusCode} ${response.body}',
-      );
-      try {
-        final responseBody = json.decode(response.body);
-        final errorMessage =
-            responseBody['detail'] ?? 'Ocurrió un error en la petición';
-        throw Exception(errorMessage);
-      } catch (e) {
-        // Si el cuerpo no es JSON válido o no tiene 'detail'
-        throw Exception(
-          'Error ${response.statusCode}: ${response.reasonPhrase}',
-        );
-      }
-    }
   }
 }
