@@ -62,24 +62,22 @@ class _MainScreenState extends State<MainScreen> {
       // Si se guardó exitosamente
       if (mounted) {
         showSuccessSnackBar(context, 'Transacción guardada exitosamente');
-        print(">>> LLAMANDO A REFRESCAR DATOS <<<");
         _refreshCurrentTabData();
+        print(">>> LLAMANDO A REFRESCAR DATOS <<<");
+        
       }
     }
   }
 
   // --- 4. Función que refresca la pestaña activa ---
   void _refreshCurrentTabData() {
-    switch (_selectedIndex) {
-      case 0: // Índice del Dashboard
-        _dashboardKey.currentState?.refreshData();
-        break;
-      case 1: // Índice de Movimientos
-        _transactionsKey.currentState?.refreshData();
-        break;
-      // Añade casos para otras pestañas si es necesario
-      // case 2: _analysisKey.currentState?.refreshData(); break;
-    }
+    print("MainScreen: Transaction saved, refreshing relevant screens...");
+    // Llama a refreshData en el Dashboard SIEMPRE
+    _dashboardKey.currentState?.refreshData();
+    // Llama a refreshData en Movimientos SIEMPRE
+    _transactionsKey.currentState?.refreshData();
+    
+    // No necesitas el switch(_selectedIndex) aquí
   }
   // ----------------------------------------------------
 

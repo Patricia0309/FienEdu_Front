@@ -1,25 +1,30 @@
+// lib/features/transactions/screens/transactions_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Asegúrate de tener este import
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/category_service.dart';
 import '../../../data/services/transaction_service.dart';
-import '../../inicial_setup/models/category_model.dart';
+import '../../inicial_setup/models/category_model.dart'; // Cambiado a initial_setup
 import '../models/transaction_model.dart';
 import '../widgets/transaction_list_item.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+  // Añadimos el Key necesario para el GlobalKey
+  const TransactionsScreen({Key? key}) : super(key: key);
 
   @override
-  State<TransactionsScreen> createState() => TransactionsScreenState();
+  // Hacemos el State público
+  TransactionsScreenState createState() => TransactionsScreenState();
 }
 
+// Hacemos el State público
 class TransactionsScreenState extends State<TransactionsScreen> {
   final TransactionService _transactionService = TransactionService();
   final CategoryService _categoryService = CategoryService();
 
-  // --- 1. NUEVAS VARIABLES DE ESTADO ---
+  // Variables de estado
   bool _isLoading = true;
   List<Transaction> _allTransactions = [];
   List<Transaction> _filteredTransactions = [];
@@ -31,22 +36,28 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _fetchData(); // Carga inicial de datos
   }
 
+  // Método público para refrescar
   void refreshData() {
     print("TransactionsScreen: Refrescando datos...");
-    // Ponemos isLoading a true brevemente para mostrar el spinner mientras recarga
-    setState(() {
-      _isLoading = true;
-    });
-    // Vuelve a llamar a la función que busca los datos de la API
+    // Muestra el spinner brevemente
+    if (mounted) {
+       setState(() { _isLoading = true; });
+    }
+    // Vuelve a llamar a la función que busca los datos
     _fetchData();
   }
 
+  // Función para obtener los datos de la API
   Future<void> _fetchData() async {
+    // Ponemos isLoading a true si no estamos ya cargando (evita doble spinner en refresh)
+    if (mounted && !_isLoading) {
+       setState(() { _isLoading = true; });
+    }
+
     try {
-      // Obtenemos ambos sets de datos al mismo tiempo
       final results = await Future.wait([
         _transactionService.getTransactions(),
         _categoryService.getCategories(),
@@ -55,90 +66,115 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       final transactions = results[0] as List<Transaction>;
       final categories = results[1] as List<Category>;
 
-      setState(() {
-        _allTransactions = transactions;
-        _filteredTransactions = transactions; // Al inicio, mostramos todo
-        _categoryMap = {for (var cat in categories) cat.id: cat};
-        _isLoading = false;
-      });
+      // --- PRINT #1: ¿Cuántas transacciones llegaron de la API? ---
+      print("TRANSACTIONS_SCREEN - _fetchData: Recibidas ${transactions.length} transacciones de la API.");
+      // -----------------------------------------------------------
+
+      if (mounted) {
+        final categoryMap = {for (var cat in categories) cat.id: cat};
+        // Aplicamos el filtro ANTES de setState para que la lista inicial sea correcta
+        List<Transaction> initialFilteredList;
+        switch (_selectedFilter) {
+          case 'Ingresos': initialFilteredList = transactions.where((t) => t.type == TransactionType.ingreso).toList(); break;
+          case 'Gastos': initialFilteredList = transactions.where((t) => t.type == TransactionType.gasto).toList(); break;
+          default: initialFilteredList = transactions; break;
+        }
+        
+        // --- PRINT #2: ¿Cuántas quedaron después del filtro inicial? ---
+        print("TRANSACTIONS_SCREEN - _fetchData: Lista filtrada inicial tiene ${initialFilteredList.length} items.");
+        // -------------------------------------------------------------
+
+        setState(() {
+          _allTransactions = transactions;
+          _filteredTransactions = initialFilteredList; // Usamos la lista pre-filtrada
+          _categoryMap = categoryMap;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      // Manejar error
-      setState(() {
-        _isLoading = false;
-      });
-      print('Error al cargar datos: $e');
+      if (mounted) {
+        setState(() { _isLoading = false; });
+        print('Error al cargar datos en TransactionsScreen: $e');
+      }
     }
   }
 
-  // --- 2. LÓGICA PARA FILTRAR ---
+  // Lógica para aplicar el filtro (separada para reutilizar)
+  void _applyFilter(String filter, List<Transaction> sourceList) {
+     switch (filter) {
+        case 'Ingresos':
+          _filteredTransactions = sourceList.where((t) => t.type == TransactionType.ingreso).toList();
+          break;
+        case 'Gastos':
+          _filteredTransactions = sourceList.where((t) => t.type == TransactionType.gasto).toList();
+          break;
+        default: // 'Todos'
+          _filteredTransactions = sourceList;
+          break;
+      }
+  }
+
+  // Lógica para cambiar el filtro y actualizar la UI
   void _filterTransactions(String filter) {
     setState(() {
       _selectedFilter = filter;
-      switch (filter) {
-        case 'Ingresos':
-          _filteredTransactions = _allTransactions
-              .where((t) => t.type == TransactionType.ingreso)
-              .toList();
-          break;
-        case 'Gastos':
-          _filteredTransactions = _allTransactions
-              .where((t) => t.type == TransactionType.gasto)
-              .toList();
-          break;
-        default: // 'Todos'
-          _filteredTransactions = _allTransactions;
-          break;
-      }
+      _applyFilter(filter, _allTransactions); // Aplicamos filtro a la lista completa
+      
+      // --- PRINT #3: ¿Cuántas quedaron después de cambiar el filtro? ---
+      print("TRANSACTIONS_SCREEN - _filterTransactions: Lista filtrada AHORA tiene ${_filteredTransactions.length} items.");
+      // ---------------------------------------------------------------
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.transparent, // Para ver el fondo de MainScreen
       body: Column(
         children: [
           _buildHeader(context),
-          _buildSummaryCard(
-            _allTransactions,
-          ), // El resumen siempre muestra el total
-          // --- 3. UI ACTUALIZADA ---
-          // Si está cargando, muestra un spinner. Si no, la lista.
+          // Mostramos el resumen solo si no está cargando y hay transacciones
+          if (!_isLoading && _allTransactions.isNotEmpty) 
+             _buildSummaryCard(_allTransactions),
+          
+          // Muestra spinner o la lista
           _isLoading
-              ? const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
-                )
+              ? const Expanded(child: Center(child: CircularProgressIndicator()))
               : Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filteredTransactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = _filteredTransactions[index];
-                      final category =
-                          _categoryMap[transaction.categoryId] ??
-                          Category(id: 0, title: 'Desconocida', icon: '❓');
-                      return TransactionListItem(
-                        transaction: transaction,
-                        category: category,
-                      );
-                    },
-                  ),
+                  // Muestra mensaje si la lista filtrada está vacía
+                  child: _filteredTransactions.isEmpty 
+                      ? Center(child: Text('No hay transacciones para mostrar.', style: AppTextStyles.body))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _filteredTransactions.length,
+                          itemBuilder: (context, index) {
+                            // --- PRINT #4: ¿Se está intentando construir la lista? ---
+                            print("TRANSACTIONS_SCREEN - itemBuilder: Construyendo item $index");
+                            // --------------------------------------------------------
+                            final transaction = _filteredTransactions[index];
+                            final category = _categoryMap[transaction.categoryId] ?? Category(id: 0, title: 'Desconocida', icon: '❓');
+                            return TransactionListItem(
+                              transaction: transaction,
+                              category: category,
+                            );
+                          },
+                        ),
                 ),
         ],
       ),
     );
   }
 
+  // --- Widgets Helper ---
+
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 16,
-        right: 16,
-        bottom: 16,
+        top: MediaQuery.of(context).padding.top + 16, // Espacio para la barra de estado
+        left: 16, right: 16, bottom: 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.accent2.withOpacity(0.8),
+        color: AppColors.accent2.withOpacity(0.8), // Color del header
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Column(
@@ -147,22 +183,17 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Movimientos',
-                style: AppTextStyles.subtitle.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-              SvgPicture.asset('assets/img/svg/Logo.2.svg', height: 60),
+              Text('Movimientos', style: AppTextStyles.title.copyWith(color: AppColors.primary)),
+              SvgPicture.asset(
+                  'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+                  height: 40,
+                  colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn)),
             ],
           ),
           const SizedBox(height: 16),
-          // El Dropdown ahora llama a la función de filtro
+          // Dropdown de filtro
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 4.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.8),
               borderRadius: BorderRadius.circular(30),
@@ -173,14 +204,11 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                 value: _selectedFilter,
                 icon: const Icon(Icons.keyboard_arrow_down),
                 items: _filterOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
+                  return DropdownMenuItem<String>(value: value, child: Text(value));
                 }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    _filterTransactions(newValue);
+                    _filterTransactions(newValue); // Llama a la función de filtro
                   }
                 },
               ),
@@ -192,23 +220,13 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _buildSummaryCard(List<Transaction> transactions) {
-    // Calculamos los totales usando la lista completa (sin filtrar)
-    double totalIngresos = transactions
-        .where((t) => t.type == TransactionType.ingreso)
-        .fold(0, (sum, t) => sum + t.amount);
-    double totalGastos = transactions
-        .where((t) => t.type == TransactionType.gasto)
-        .fold(0, (sum, t) => sum + t.amount);
+    double totalIngresos = transactions.where((t) => t.type == TransactionType.ingreso).fold(0, (sum, t) => sum + t.amount);
+    double totalGastos = transactions.where((t) => t.type == TransactionType.gasto).fold(0, (sum, t) => sum + t.amount);
 
     return Card(
-      margin: const EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        8,
-      ), // Ajustamos margen superior
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4, // Añadimos un poco de elevación como en tu diseño
+      elevation: 4,
       shadowColor: Colors.black12,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -219,36 +237,19 @@ class TransactionsScreenState extends State<TransactionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Total transacciones', style: AppTextStyles.body),
-                // Mostramos el número total de transacciones
-                Text(
-                  transactions.length.toString(),
-                  style: AppTextStyles.subtitle,
-                ),
+                Text(transactions.length.toString(), style: AppTextStyles.subtitle),
               ],
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Mostramos los totales calculados
-                Text(
-                  '⬆ \$${totalIngresos.toStringAsFixed(0)}',
-                  style: AppTextStyles.body.copyWith(
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '⬇ \$${totalGastos.toStringAsFixed(0)}',
-                  style: AppTextStyles.body.copyWith(
-                    color: Colors.red.shade600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('⬆ \$${totalIngresos.toStringAsFixed(0)}', style: AppTextStyles.body.copyWith(color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+                Text('⬇ \$${totalGastos.toStringAsFixed(0)}', style: AppTextStyles.body.copyWith(color: Colors.red.shade600, fontWeight: FontWeight.bold)),
               ],
-            ),
+            )
           ],
         ),
       ),
     );
   }
-}
+} 

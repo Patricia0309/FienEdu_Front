@@ -7,32 +7,30 @@ import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/transaction_service.dart';
 import '../../../data/services/user_service.dart';
-import '../../../data/services/budget_service.dart'; // Import BudgetService
+import '../../../data/services/budget_service.dart';
 import '../../../features/profile/models/student_model.dart';
 import '../../../features/transactions/models/transaction_model.dart';
-import '../../../features/budgets/models/budget_status_model.dart'; // Import BudgetStatus
+import '../../../features/budgets/models/budget_status_model.dart';
 import '../widgets/dashboard_actions_grid.dart';
 import '../widgets/perfil_financiero_card.dart';
 import '../widgets/total_mes_card.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/set_budget_modal.dart';
 
+
 class DashboardScreen extends StatefulWidget {
-  // Add the key parameter needed for GlobalKey
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  // Make the State class public
   DashboardScreenState createState() => DashboardScreenState();
 }
 
-// Make the State class public
 class DashboardScreenState extends State<DashboardScreen> {
   final TransactionService _transactionService = TransactionService();
   final UserService _userService = UserService();
   final BudgetService _budgetService = BudgetService();
 
-  // --- 1. State Variables ---
+  // State Variables
   Student? _studentData;
   List<Transaction>? _transactionsData;
   BudgetStatus? _budgetStatusData;
@@ -42,65 +40,59 @@ class DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData(); // Load data initially
+    _fetchDashboardData();
   }
 
-  // --- 2. Combined Fetch Function ---
-  Future<void> _fetchDashboardData() async {
-    // Only show full loading spinner if there's no data yet
-    if (_studentData == null) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+  // --- FUNCIÓN DE CARGA/RECARGA ---
+  Future<void> _fetchDashboardData({bool isRefreshing = false}) async {
+    // Muestra spinner solo en carga inicial O si se indica refresco explícito
+    if (isRefreshing || _studentData == null) {
+       setState(() { _isLoading = true; _error = null; });
     } else {
-      // If refreshing, maybe show a smaller indicator or just update
-      // For simplicity, we'll just reload without a full screen spinner
-      setState(() {
-        _error = null;
-      }); // Reset error on refresh attempt
+       setState(() { _error = null; }); // Limpia error si solo se actualiza estado
     }
 
     try {
+      // Pedimos todos los datos necesarios
       final results = await Future.wait([
         _userService.getMe(),
         _transactionService.getTransactions(),
-        // Budget status fetch is separate as it might return 404 (null)
       ]);
-
       BudgetStatus? budgetStatus;
       try {
-        budgetStatus = await _budgetService.getBudgetStatus();
+         budgetStatus = await _budgetService.getBudgetStatus();
       } catch (e) {
-        print("No budget status found or error: $e");
-        budgetStatus = null;
+         print("Dashboard: No se encontró presupuesto activo o hubo error: $e");
+         budgetStatus = null;
       }
 
+      // IMPORTANTE: Verificar si el widget sigue montado ANTES de llamar a setState
       if (mounted) {
         setState(() {
           _studentData = results[0] as Student;
           _transactionsData = results[1] as List<Transaction>;
-          _budgetStatusData = budgetStatus; // Store budget status (can be null)
-          _isLoading = false;
+          _budgetStatusData = budgetStatus;
+          _isLoading = false; // <<< --- MARCA COMO CARGA COMPLETADA AQUÍ
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
+       if (mounted) {
+         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
-          _isLoading = false;
+          _isLoading = false; // <<< --- MARCA COMO CARGA COMPLETADA (CON ERROR)
         });
       }
     }
   }
 
-  // --- 3. Public Refresh Method ---
-  void refreshData() {
+  // --- MÉTODO DE REFRESCO PÚBLICO ---
+  // Ahora es async para poder esperar a que _fetch termine si quisiéramos
+  Future<void> refreshData() async {
     print("DashboardScreen: Refreshing data via refreshData()...");
-    _fetchDashboardData(); // Call the fetch function again
+    // Just call the fetch function. It handles its own setState.
+    await _fetchDashboardData(isRefreshing: true);
   }
 
-  // Function to show budget modal (needs budgetStatus)
   void _showSetBudgetModal(BudgetStatus? currentStatus) async {
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -114,7 +106,8 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Process Transaction Data function (remains the same)
+ // Función para procesar datos (sin cambios)
+   // Process Transaction Data function (remains the same)
   Map<String, dynamic> _processTransactionData(List<Transaction> transactions) {
     double totalIngresos = 0;
     double totalGastos = 0;
@@ -165,43 +158,30 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- 4. Build UI based on State ---
+    // Construye la UI basada en el estado actual
     return Scaffold(
-      // AppBar needs data, so we build it inside _buildContent
-      // backgroundColor: AppColors.backgroundInApp, // Set in MainScreen
       body: _buildContent(),
     );
   }
 
-  // Helper to build the main content based on state
+  // Helper para construir el contenido
   Widget _buildContent() {
+    // Muestra spinner solo en la carga inicial
     if (_isLoading && _studentData == null) {
-      // Show loading only on initial load
       return const Center(child: CircularProgressIndicator());
     }
+    // Muestra error si existe
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Error al cargar el dashboard: $_error'),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: refreshData,
-              child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      );
+      return Center(child: Column( /* ... Error UI ... */ ));
     }
+    // Si tenemos datos, construye la pantalla
     if (_studentData != null && _transactionsData != null) {
       final student = _studentData!;
       final transactions = _transactionsData!;
-      // Process data *here* now that we know we have it
+      // Procesamos datos aquí, asegurando que son los más recientes
       final processedData = _processTransactionData(transactions);
 
       return Scaffold(
-        // Return a full Scaffold here
         appBar: AppBar(
           toolbarHeight: 80,
           backgroundColor: AppColors.element, // Use correct color
@@ -243,31 +223,34 @@ class DashboardScreenState extends State<DashboardScreen> {
           ],
           titleSpacing: 0,
         ),
-        body: SingleChildScrollView(
-          child: Container(
-            color: AppColors.background, // Use correct background
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                TotalMesCard(
-                  budgetStatus: _budgetStatusData, // Pass the fetched status
+        body: RefreshIndicator( // <-- Opcional: Añade "pull-to-refresh"
+           onRefresh: refreshData, // Llama a nuestro método al deslizar hacia abajo
+           child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(), // Asegura que siempre se pueda hacer pull-to-refresh
+              child: Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TotalMesCard(budgetStatus: _budgetStatusData), // Usa el estado actual
+                    const SizedBox(height: 16),
+                    BudgetCard(
+                      budgetStatus: _budgetStatusData, // Usa el estado actual
+                      onSetBudgetTap: () => _showSetBudgetModal(_budgetStatusData),
+                    ),
+                    const SizedBox(height: 16),
+                    const PerfilFinancieroCard(),
+                    const SizedBox(height: 16),
+                    const DashboardActionsGrid(),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                BudgetCard(
-                  budgetStatus: _budgetStatusData, // Pass the fetched status
-                  onSetBudgetTap: () => _showSetBudgetModal(_budgetStatusData),
-                ),
-                const SizedBox(height: 16),
-                const PerfilFinancieroCard(),
-                const SizedBox(height: 16),
-                const DashboardActionsGrid(),
-              ],
-            ),
-          ),
+              ),
+           ),
         ),
       );
     }
-    // Fallback if data is null after loading (shouldn't happen with correct logic)
-    return const Center(child: Text('No se pudieron cargar los datos.'));
+    // Fallback
+    return const Center(child: Text('Cargando datos...'));
   }
+
 }
