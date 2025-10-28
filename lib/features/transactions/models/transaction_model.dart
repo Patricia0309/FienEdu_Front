@@ -19,26 +19,23 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
-
     final double amountValue = (json['amount'] as num?)?.toDouble() ?? 0.0;
-    final DateTime dateValue = DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now();
-    final TransactionType typeValue = json['type'] == 'ingreso' 
-        ? TransactionType.ingreso 
-        : TransactionType.gasto;
+    final DateTime dateValue =
+        DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now();
     final int categoryIdValue = json['category_id'] as int? ?? 0;
     final String descriptionValue = json['description'] as String? ?? '';
-
+    final String typeString =
+        json['type'] as String? ?? 'gasto'; // Make type string safe
+    final TransactionType typeValue = typeString == 'ingreso'
+        ? TransactionType.ingreso
+        : TransactionType.gasto;
 
     return Transaction(
-      id: json['id'],
-      amount: json['amount'],
-      date: DateTime.parse(
-        json['date'],
-      ), // Asumiendo que la API devuelve la fecha como un string ISO 8601
-      type: json['type'] == 'ingreso'
-          ? TransactionType.ingreso
-          : TransactionType.gasto,
-      categoryId: json['category_id'],
+      id: json['id'] as int? ?? 0,
+      amount: amountValue,
+      date: dateValue,
+      type: typeValue,
+      categoryId: categoryIdValue,
       description: descriptionValue,
     );
   }

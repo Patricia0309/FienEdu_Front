@@ -8,7 +8,7 @@ import '../../common/routing/app_routes.dart';
 class ApiService {
   // Asegúrate de que esta URL sea la correcta para tu teléfono
   static const String _baseUrl =
-      //'http:// 192.168.100.179:8000'; // Usa la IP de tu PC
+      //'http://192.168.0.10:8000'; // Usa la IP de tu PC
       'http://10.0.2.2:8000';
   final _storage =
       const FlutterSecureStorage(); // Usamos storage directamente aquí
@@ -42,7 +42,8 @@ class ApiService {
     // Usa la clave global para navegar a la pantalla de bienvenida
     // y eliminar todas las pantallas anteriores de la pila.
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      AppRoutes.welcome, // Asegúrate que esta sea tu pantalla de login/bienvenida
+      AppRoutes
+          .welcome, // Asegúrate que esta sea tu pantalla de login/bienvenida
       (route) => false, // Elimina todas las rutas anteriores
     );
   }

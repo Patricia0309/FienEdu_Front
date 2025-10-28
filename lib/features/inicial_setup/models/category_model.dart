@@ -14,11 +14,13 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
+    final String categoryName =
+        json['name'] as String? ?? 'Sin nombre'; // Safe read
     return Category(
-      id: json['id'],
-      title: json['name'],
-      // 2. Usamos el nuevo nombre PÚBLICO de la función
-      icon: getIconForCategory(json['name']),
+      id: json['id'] as int? ?? 0, // Also make ID safe
+      title: categoryName,
+      icon: getIconForCategory(categoryName),
+      // Description is added later in Flutter
     );
   }
 

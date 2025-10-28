@@ -12,10 +12,10 @@ class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
   @override
-  State<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<TransactionsScreen> createState() => TransactionsScreenState();
 }
 
-class _TransactionsScreenState extends State<TransactionsScreen> {
+class TransactionsScreenState extends State<TransactionsScreen> {
   final TransactionService _transactionService = TransactionService();
   final CategoryService _categoryService = CategoryService();
 
@@ -31,6 +31,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchData();
+  }
+
+  void refreshData() {
+    print("TransactionsScreen: Refrescando datos...");
+    // Ponemos isLoading a true brevemente para mostrar el spinner mientras recarga
+    setState(() {
+      _isLoading = true;
+    });
+    // Vuelve a llamar a la función que busca los datos de la API
     _fetchData();
   }
 

@@ -1,3 +1,5 @@
+// lib/features/main_app/screens/main_screen.dart
+
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
@@ -16,14 +18,30 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // 1. Añadimos la nueva pantalla a la lista
-  static final List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(),
-    TransactionsScreen(),
-    AnalysisScreen(),
-    Text('Pestaña Aprende'),
-    ProfileScreen(),
-  ];
+  // --- 1. Claves Globales para acceder a los States ---
+  final GlobalKey<DashboardScreenState> _dashboardKey =
+      GlobalKey<DashboardScreenState>();
+  final GlobalKey<TransactionsScreenState> _transactionsKey =
+      GlobalKey<TransactionsScreenState>();
+  // Añade más claves si otras pestañas necesitan refresco (ej. AnalysisScreen)
+
+  // Lista de widgets con sus claves asignadas
+  late final List<Widget> _widgetOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    // --- 2. Asigna las claves al crear los widgets ---
+    _widgetOptions = <Widget>[
+      // Asegúrate que DashboardScreen sea StatefulWidget
+      DashboardScreen(key: _dashboardKey),
+      // Asegúrate que TransactionsScreen sea StatefulWidget
+      TransactionsScreen(key: _transactionsKey),
+      const AnalysisScreen(), // Podría necesitar key y refresh si muestra datos dinámicos
+      const Text('Pestaña Aprende'), // Placeholder
+      const ProfileScreen(), // Ya usa FutureBuilder para refrescarse
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -31,10 +49,8 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // 2. Función para mostrar el modal de nueva transacción
+  // Función para mostrar el modal (ahora llama a refresco)
   void _showNewTransactionModal(BuildContext context) async {
-    // La hacemos 'async'
-    // 'await' espera a que el modal se cierre y nos da su resultado
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -42,28 +58,50 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context) => const NewTransactionModal(),
     );
 
-    // Si el resultado que nos devolvió el modal es 'true'...
     if (result == true) {
-      // ...mostramos el SnackBar desde aquí, usando el context de MainScreen,
-      // que es 100% válido y seguro.
-      showSuccessSnackBar(context, 'Transacción guardada exitosamente');
+      // Si se guardó exitosamente
+      if (mounted) {
+        showSuccessSnackBar(context, 'Transacción guardada exitosamente');
+        print(">>> LLAMANDO A REFRESCAR DATOS <<<");
+        _refreshCurrentTabData();
+      }
     }
   }
+
+  // --- 4. Función que refresca la pestaña activa ---
+  void _refreshCurrentTabData() {
+    switch (_selectedIndex) {
+      case 0: // Índice del Dashboard
+        _dashboardKey.currentState?.refreshData();
+        break;
+      case 1: // Índice de Movimientos
+        _transactionsKey.currentState?.refreshData();
+        break;
+      // Añade casos para otras pestañas si es necesario
+      // case 2: _analysisKey.currentState?.refreshData(); break;
+    }
+  }
+  // ----------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      // 3. Añadimos el FloatingActionButton aquí para que sea visible en todas las pestañas
+      backgroundColor: AppColors.background, // Fondo correcto
+      body: Stack(
+        // Mantenemos el stack para el fondo opaco
+        children: [
+          Container(color: Colors.black.withOpacity(0.05)),
+          // Usamos IndexedStack para mantener el estado de las pestañas inactivas
+          IndexedStack(index: _selectedIndex, children: _widgetOptions),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showNewTransactionModal(context),
         backgroundColor: const Color(0xFF4F772D),
         child: const Icon(Icons.add, color: Colors.white),
         shape: const CircleBorder(),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat, // Posición
-
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
