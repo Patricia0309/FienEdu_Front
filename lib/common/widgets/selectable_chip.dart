@@ -14,7 +14,6 @@ class SelectableChip extends StatelessWidget {
   final Color selectedBorderColor;
   final Color unselectedBorderColor;
 
-
   const SelectableChip({
     super.key,
     required this.label,
@@ -27,7 +26,6 @@ class SelectableChip extends StatelessWidget {
     this.unselectedLabelStyle = const TextStyle(color: AppColors.secondary),
     this.selectedBorderColor = AppColors.accent2,
     this.unselectedBorderColor = AppColors.secondary,
-
   });
 
   @override
@@ -44,7 +42,9 @@ class SelectableChip extends StatelessWidget {
           width: 1.5,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Bordes más redondeados
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ), // Bordes más redondeados
       ),
     );
   }

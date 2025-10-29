@@ -6,7 +6,7 @@ import '../../../common/theme/app_text_styles.dart';
 import '../../budgets/models/budget_status_model.dart';
 
 class BudgetCard extends StatelessWidget {
-  final VoidCallback onSetBudgetTap; 
+  final VoidCallback onSetBudgetTap;
   final BudgetStatus? budgetStatus;
   const BudgetCard({
     super.key,
@@ -17,15 +17,25 @@ class BudgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasActiveBudget = budgetStatus != null;
-    final String buttonText = hasActiveBudget ? 'Editar Presupuesto' : 'Establecer Presupuesto';
-    final IconData buttonIcon = hasActiveBudget ? Icons.edit_outlined : Icons.add;
+    final String buttonText = hasActiveBudget
+        ? 'Editar Presupuesto'
+        : 'Establecer Presupuesto';
+    final IconData buttonIcon = hasActiveBudget
+        ? Icons.edit_outlined
+        : Icons.add;
 
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [ BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5)) ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +44,10 @@ class BudgetCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Presupuesto', style: AppTextStyles.heading),
-              const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.primary,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -42,16 +55,22 @@ class BudgetCard extends StatelessWidget {
             icon: const Icon(Icons.add, color: AppColors.accent1),
             label: Text(
               buttonText, // Texto dinámico
-              style: AppTextStyles.body.copyWith(color: AppColors.accent1, fontWeight: FontWeight.w600),
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.accent1,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            onPressed: onSetBudgetTap, // Call the function passed from Dashboard
+            onPressed:
+                onSetBudgetTap, // Call the function passed from Dashboard
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
               foregroundColor: AppColors.accent1,
               side: const BorderSide(color: AppColors.accent1, width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

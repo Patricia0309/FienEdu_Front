@@ -60,17 +60,21 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
       try {
         await _transactionService.createTransaction(
           amount: double.parse(_amountController.text),
-          type: _selectedType == 'gasto' ? TransactionType.gasto : TransactionType.ingreso,
+          type: _selectedType == 'gasto'
+              ? TransactionType.gasto
+              : TransactionType.ingreso,
           // Si es un ingreso, tu API debería manejar un ID nulo o especial. Enviamos 1 por ahora.
-          categoryId: _selectedType == 'gasto' ? _selectedCategoryId! : 1,
+          categoryId: _selectedType == 'gasto' ? _selectedCategoryId : null,
           date: _selectedDate,
           note: _noteController.text,
         );
         if (mounted) Navigator.pop(context, true);
-
       } catch (e) {
         if (mounted) {
-          showErrorSnackBar(context, e.toString().replaceFirst('Exception: ', ''));
+          showErrorSnackBar(
+            context,
+            e.toString().replaceFirst('Exception: ', ''),
+          );
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -116,7 +120,9 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Text('Nueva Transacción', style: AppTextStyles.heading)),
+              Center(
+                child: Text('Nueva Transacción', style: AppTextStyles.heading),
+              ),
               const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
@@ -125,66 +131,121 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // --- Tipo ---
-                      Text('Tipo', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Tipo',
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       ToggleButtons(
-                        isSelected: [_selectedType == 'gasto', _selectedType == 'ingreso'],
+                        isSelected: [
+                          _selectedType == 'gasto',
+                          _selectedType == 'ingreso',
+                        ],
                         onPressed: (index) {
                           setState(() {
                             _selectedType = index == 0 ? 'gasto' : 'ingreso';
                             // Limpiamos nota o categoría según el cambio
                             if (_selectedType == 'gasto') {
                               _noteController.clear();
-                              _selectedCategoryId = null; // Resetea la categoría si cambiamos a Gasto
+                              _selectedCategoryId =
+                                  null; // Resetea la categoría si cambiamos a Gasto
                             } else {
-                              _selectedCategoryId = null; // También resetea si cambiamos a Ingreso
+                              _selectedCategoryId =
+                                  null; // También resetea si cambiamos a Ingreso
                             }
                           });
                         },
                         borderRadius: BorderRadius.circular(30.0),
-                        fillColor: _selectedType == 'gasto' ? Colors.red.shade400 : Colors.green.shade400,
+                        fillColor: _selectedType == 'gasto'
+                            ? Colors.red.shade400
+                            : Colors.green.shade400,
                         selectedColor: Colors.white,
-                        constraints: BoxConstraints(minWidth: (MediaQuery.of(context).size.width - 52) / 2, minHeight: 40),
+                        constraints: BoxConstraints(
+                          minWidth:
+                              (MediaQuery.of(context).size.width - 52) / 2,
+                          minHeight: 40,
+                        ),
                         children: const [Text('Gasto'), Text('Ingreso')],
                       ),
                       const SizedBox(height: 20),
 
                       // --- Categoría (solo Gasto y usa favoritas) ---
                       if (_selectedType == 'gasto') ...[
-                        Text('Categoría *', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Categoría *',
+                          style: AppTextStyles.body.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         FutureBuilder<Map<String, dynamic>>(
                           future: _dataFuture,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
                             }
                             if (snapshot.hasError || !snapshot.hasData) {
-                              return const Text('No se pudieron cargar las categorías');
+                              return const Text(
+                                'No se pudieron cargar las categorías',
+                              );
                             }
-                            final student = snapshot.data!['student'] as Student;
-                            final favoriteCategories = student.favoriteCategories;
+                            final student =
+                                snapshot.data!['student'] as Student;
+                            final favoriteCategories =
+                                student.favoriteCategories;
 
                             if (favoriteCategories.isEmpty) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade400),
+                                  border: Border.all(
+                                    color: Colors.grey.shade400,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text('No tienes categorías favoritas. Ve a Perfil para añadirlas.', style: AppTextStyles.small),
+                                child: Text(
+                                  'No tienes categorías favoritas. Ve a Perfil para añadirlas.',
+                                  style: AppTextStyles.small,
+                                ),
                               );
                             }
 
                             return DropdownButtonFormField<int>(
                               value: _selectedCategoryId,
-                              hint: const Text('Selecciona una categoría favorita'),
-                              onChanged: (int? newValue) { setState(() { _selectedCategoryId = newValue; }); },
-                              items: favoriteCategories.map<DropdownMenuItem<int>>((Category category) {
-                                return DropdownMenuItem<int>(value: category.id, child: Text(category.title));
-                              }).toList(),
-                              validator: (value) => value == null ? 'Por favor selecciona una categoría' : null,
-                              decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                              hint: const Text(
+                                'Selecciona una categoría favorita',
+                              ),
+                              onChanged: (int? newValue) {
+                                setState(() {
+                                  _selectedCategoryId = newValue;
+                                });
+                              },
+                              items: favoriteCategories
+                                  .map<DropdownMenuItem<int>>((
+                                    Category category,
+                                  ) {
+                                    return DropdownMenuItem<int>(
+                                      value: category.id,
+                                      child: Text(category.title),
+                                    );
+                                  })
+                                  .toList(),
+                              validator: (value) => value == null
+                                  ? 'Por favor selecciona una categoría'
+                                  : null,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -193,7 +254,12 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
 
                       // --- Nota (solo Ingreso) ---
                       if (_selectedType == 'ingreso') ...[
-                        Text('Nota', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Nota',
+                          style: AppTextStyles.body.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         CustomInputField(
                           controller: _noteController,
@@ -205,35 +271,51 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                       ],
 
                       // --- Monto ---
-                      Text('Monto *', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Monto *',
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       CustomInputField(
                         controller: _amountController,
                         labelText: '0.00',
                         prefixIcon: Icons.attach_money,
                         keyboardType: TextInputType.number,
-                        validator: (value) => (value == null || value.isEmpty) ? 'Por favor ingresa un monto' : null,
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? 'Por favor ingresa un monto'
+                            : null,
                       ),
                       const SizedBox(height: 20),
 
                       // --- Fecha ---
-                      Text('Fecha', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Fecha',
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
                         child: TextButton.icon(
                           icon: const Icon(Icons.calendar_today),
-                          label: Text(DateFormat('MMMM d, y').format(_selectedDate)),
+                          label: Text(
+                            DateFormat('MMMM d, y').format(_selectedDate),
+                          ),
                           onPressed: () => _selectDate(context),
                           style: TextButton.styleFrom(
                             foregroundColor: Theme.of(context).primaryColor,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(color: Colors.grey.shade400),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 20), // Espacio final del scroll
-
                     ],
                   ),
                 ),
@@ -242,12 +324,19 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
               // --- Botones Inferiores ---
               Row(
                 children: [
-                  Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar'))),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
                   const SizedBox(width: 16),
-                  Expanded(child: PrimaryButton(
-                    onPressed: _isLoading ? null : _handleSave,
-                    text: _isLoading ? 'Guardando...' : 'Guardar',
-                  )),
+                  Expanded(
+                    child: PrimaryButton(
+                      onPressed: _isLoading ? null : _handleSave,
+                      text: _isLoading ? 'Guardando...' : 'Guardar',
+                    ),
+                  ),
                 ],
               ),
             ],

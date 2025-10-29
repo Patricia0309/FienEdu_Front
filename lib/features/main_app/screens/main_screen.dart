@@ -64,7 +64,6 @@ class _MainScreenState extends State<MainScreen> {
         showSuccessSnackBar(context, 'Transacción guardada exitosamente');
         _refreshCurrentTabData();
         print(">>> LLAMANDO A REFRESCAR DATOS <<<");
-        
       }
     }
   }
@@ -76,7 +75,7 @@ class _MainScreenState extends State<MainScreen> {
     _dashboardKey.currentState?.refreshData();
     // Llama a refreshData en Movimientos SIEMPRE
     _transactionsKey.currentState?.refreshData();
-    
+
     // No necesitas el switch(_selectedIndex) aquí
   }
   // ----------------------------------------------------

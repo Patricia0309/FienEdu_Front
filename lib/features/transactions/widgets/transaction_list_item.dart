@@ -19,9 +19,33 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncome = transaction.type == TransactionType.ingreso;
+    print(
+      "DEBUG TransactionListItem: Recibida transaction.description = '${transaction.description}' para ID ${transaction.id}",
+    );
+    final bool isIncome = transaction.type == TransactionType.ingreso;
     final amountColor = isIncome ? Colors.green.shade700 : Colors.red.shade600;
     final amountSign = isIncome ? '+' : '-';
+
+    final String displayTitle;
+    final String displayIcon;
+    final String displaySubtitle; // Variable extra para el subtítulo
+
+    if (isIncome) {
+      // Si es Ingreso, el título es la Descripción, el ícono es 💵, y no hay subtítulo extra.
+      // Usamos 'Ingreso' como fallback si la descripción está vacía.
+      displayTitle = transaction.description.isNotEmpty
+          ? transaction.description
+          : 'Ingreso';
+      displayIcon = '💵';
+      displaySubtitle = ''; // Los ingresos no tienen categoría como subtítulo
+    } else {
+      // Si es Gasto, el título es la Categoría, el ícono es el de la categoría.
+      displayTitle = category.title;
+      displayIcon = category.icon;
+      // El subtítulo puede ser la descripción de la transacción (si existe)
+      displaySubtitle = transaction.description;
+    }
+    // --- FIN LÓGICA MODIFICADA ---
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -32,21 +56,29 @@ class TransactionListItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor: Colors.grey.shade100,
           // 2. Usamos el ícono de la categoría
-          child: Text(category.icon, style: const TextStyle(fontSize: 24)),
+          child: Text(displayIcon, style: const TextStyle(fontSize: 24)),
         ),
         // 3. Usamos el título de la categoría
         title: Text(
-          category.title,
+          displayTitle,
           style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // La descripción puede que no venga de la API, la dejamos opcional
-            if (transaction.description.isNotEmpty) ...[
-              Text(transaction.description, style: AppTextStyles.small),
+            // Mostramos el subtítulo (descripción del gasto si existe)
+            if (displaySubtitle.isNotEmpty && !isIncome) ...[
+              Text(
+                displaySubtitle,
+                style: AppTextStyles.small,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 4),
             ],
+            // Siempre mostramos la fecha
             Text(
               DateFormat('d MMM, yyyy').format(transaction.date),
               style: AppTextStyles.small.copyWith(color: Colors.grey.shade600),

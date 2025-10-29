@@ -11,7 +11,7 @@ class TransactionService {
   Future<void> createTransaction({
     required double amount,
     required TransactionType type,
-    required int categoryId,
+    int? categoryId,
     // La fecha y la nota son opcionales según tu schema
     DateTime? date,
     String? note,
@@ -20,7 +20,7 @@ class TransactionService {
     final Map<String, dynamic> data = {
       'amount': amount,
       'type': type.name, // .name convierte el enum a 'ingreso' o 'gasto'
-      'category_id': categoryId,
+      if (categoryId != null) 'category_id': categoryId,
     };
 
     // Añadimos los campos opcionales si existen

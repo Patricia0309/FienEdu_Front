@@ -17,7 +17,6 @@ import '../widgets/total_mes_card.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/set_budget_modal.dart';
 
-
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
@@ -47,9 +46,14 @@ class DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchDashboardData({bool isRefreshing = false}) async {
     // Muestra spinner solo en carga inicial O si se indica refresco explícito
     if (isRefreshing || _studentData == null) {
-       setState(() { _isLoading = true; _error = null; });
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
     } else {
-       setState(() { _error = null; }); // Limpia error si solo se actualiza estado
+      setState(() {
+        _error = null;
+      }); // Limpia error si solo se actualiza estado
     }
 
     try {
@@ -60,10 +64,10 @@ class DashboardScreenState extends State<DashboardScreen> {
       ]);
       BudgetStatus? budgetStatus;
       try {
-         budgetStatus = await _budgetService.getBudgetStatus();
+        budgetStatus = await _budgetService.getBudgetStatus();
       } catch (e) {
-         print("Dashboard: No se encontró presupuesto activo o hubo error: $e");
-         budgetStatus = null;
+        print("Dashboard: No se encontró presupuesto activo o hubo error: $e");
+        budgetStatus = null;
       }
 
       // IMPORTANTE: Verificar si el widget sigue montado ANTES de llamar a setState
@@ -76,8 +80,8 @@ class DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-       if (mounted) {
-         setState(() {
+      if (mounted) {
+        setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
           _isLoading = false; // <<< --- MARCA COMO CARGA COMPLETADA (CON ERROR)
         });
@@ -106,8 +110,8 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
- // Función para procesar datos (sin cambios)
-   // Process Transaction Data function (remains the same)
+  // Función para procesar datos (sin cambios)
+  // Process Transaction Data function (remains the same)
   Map<String, dynamic> _processTransactionData(List<Transaction> transactions) {
     double totalIngresos = 0;
     double totalGastos = 0;
@@ -159,9 +163,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     // Construye la UI basada en el estado actual
-    return Scaffold(
-      body: _buildContent(),
-    );
+    return Scaffold(body: _buildContent());
   }
 
   // Helper para construir el contenido
@@ -172,7 +174,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
     // Muestra error si existe
     if (_error != null) {
-      return Center(child: Column( /* ... Error UI ... */ ));
+      return Center(child: Column(/* ... Error UI ... */));
     }
     // Si tenemos datos, construye la pantalla
     if (_studentData != null && _transactionsData != null) {
@@ -223,34 +225,39 @@ class DashboardScreenState extends State<DashboardScreen> {
           ],
           titleSpacing: 0,
         ),
-        body: RefreshIndicator( // <-- Opcional: Añade "pull-to-refresh"
-           onRefresh: refreshData, // Llama a nuestro método al deslizar hacia abajo
-           child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(), // Asegura que siempre se pueda hacer pull-to-refresh
-              child: Container(
-                color: AppColors.background,
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    TotalMesCard(budgetStatus: _budgetStatusData), // Usa el estado actual
-                    const SizedBox(height: 16),
-                    BudgetCard(
-                      budgetStatus: _budgetStatusData, // Usa el estado actual
-                      onSetBudgetTap: () => _showSetBudgetModal(_budgetStatusData),
-                    ),
-                    const SizedBox(height: 16),
-                    const PerfilFinancieroCard(),
-                    const SizedBox(height: 16),
-                    const DashboardActionsGrid(),
-                  ],
-                ),
+        body: RefreshIndicator(
+          // <-- Opcional: Añade "pull-to-refresh"
+          onRefresh:
+              refreshData, // Llama a nuestro método al deslizar hacia abajo
+          child: SingleChildScrollView(
+            physics:
+                const AlwaysScrollableScrollPhysics(), // Asegura que siempre se pueda hacer pull-to-refresh
+            child: Container(
+              color: AppColors.background,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TotalMesCard(
+                    budgetStatus: _budgetStatusData,
+                  ), // Usa el estado actual
+                  const SizedBox(height: 16),
+                  BudgetCard(
+                    budgetStatus: _budgetStatusData, // Usa el estado actual
+                    onSetBudgetTap: () =>
+                        _showSetBudgetModal(_budgetStatusData),
+                  ),
+                  const SizedBox(height: 16),
+                  const PerfilFinancieroCard(),
+                  const SizedBox(height: 16),
+                  const DashboardActionsGrid(),
+                ],
               ),
-           ),
+            ),
+          ),
         ),
       );
     }
     // Fallback
     return const Center(child: Text('Cargando datos...'));
   }
-
 }

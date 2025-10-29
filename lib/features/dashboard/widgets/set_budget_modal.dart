@@ -70,12 +70,23 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
     }
     // Validación extra: Fecha de fin debe ser igual o posterior a la de inicio
     // Comparamos solo la fecha (año, mes, día) ignorando la hora
-    final normalizedStartDate = DateTime(_startDate.year, _startDate.month, _startDate.day);
-    final normalizedEndDate = DateTime(_endDate.year, _endDate.month, _endDate.day);
+    final normalizedStartDate = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+    );
+    final normalizedEndDate = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+    );
 
     if (normalizedEndDate.isBefore(normalizedStartDate)) {
-       showErrorSnackBar(context, 'La fecha de fin debe ser igual o posterior a la fecha de inicio.');
-       return;
+      showErrorSnackBar(
+        context,
+        'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
+      );
+      return;
     }
 
     setState(() => _isLoading = true);
@@ -83,7 +94,8 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
       // Llama a 'update' o 'create' según corresponda
       if (_isEditing) {
         await _budgetService.updateIncomePeriod(
-          periodId: widget.initialBudgetStatus!.incomePeriodId, // Usa el ID existente
+          periodId:
+              widget.initialBudgetStatus!.incomePeriodId, // Usa el ID existente
           amount: double.parse(_amountController.text),
           startDate: _startDate,
           endDate: _endDate,
@@ -95,9 +107,14 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
           endDate: _endDate,
         );
       }
-      if (mounted) Navigator.pop(context, true); // Devuelve éxito para refrescar Dashboard
+      if (mounted)
+        Navigator.pop(context, true); // Devuelve éxito para refrescar Dashboard
     } catch (e) {
-      if (mounted) showErrorSnackBar(context, e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        showErrorSnackBar(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+        );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -105,101 +122,123 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
 
   @override
   Widget build(BuildContext context) {
-     // Título y texto del botón dinámicos
-     final String title = _isEditing ? 'Editar Presupuesto' : 'Establecer Presupuesto';
-     final String buttonText = _isEditing ? 'Guardar Cambios' : 'Guardar Presupuesto';
+    // Título y texto del botón dinámicos
+    final String title = _isEditing
+        ? 'Editar Presupuesto'
+        : 'Establecer Presupuesto';
+    final String buttonText = _isEditing
+        ? 'Guardar Cambios'
+        : 'Guardar Presupuesto';
 
-     return Container(
-        // Padding que se ajusta si aparece el teclado
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Form(
-           key: _formKey,
-           child: SingleChildScrollView( // Permite scroll si el contenido no cabe
-              child: Column(
-                 mainAxisSize: MainAxisSize.min, // Hace que la columna tome el mínimo espacio
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   // Espacio superior
-                   const SizedBox(height: 16),
-                   // Encabezado
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       Text(title, style: AppTextStyles.heading), // Título dinámico
-                       IconButton(
-                         icon: const Icon(Icons.close),
-                         onPressed: () => Navigator.pop(context),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 24),
-
-                   // Campo Monto
-                   Text('Monto del presupuesto *', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
-                   const SizedBox(height: 8),
-                   CustomInputField(
-                     controller: _amountController,
-                     labelText: '\$ 0.00',
-                     prefixIcon: Icons.attach_money,
-                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                     validator: (value) {
-                       if (value == null || value.isEmpty) return 'Por favor ingresa un monto';
-                       if (double.tryParse(value) == null) return 'Ingresa un número válido';
-                       if (double.parse(value) <= 0) return 'El monto debe ser positivo';
-                       return null;
-                     },
-                   ),
-                   const SizedBox(height: 20),
-
-                   // Calendario Inicio
-                   Text('Fecha de inicio', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
-                   const SizedBox(height: 8),
-                   _buildCalendar(
-                     focusedDay: _focusedDayStart,
-                     selectedDay: _startDate,
-                     onDaySelected: (selectedDay, focusedDay) {
-                       setState(() {
-                         _startDate = selectedDay;
-                         _focusedDayStart = focusedDay; // Actualiza el foco también
-                       });
-                     },
-                   ),
-                   const SizedBox(height: 20),
-
-                   // Calendario Fin
-                   Text('Fecha de fin', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
-                   const SizedBox(height: 8),
-                   _buildCalendar(
-                     focusedDay: _focusedDayEnd,
-                     selectedDay: _endDate,
-                     onDaySelected: (selectedDay, focusedDay) {
-                       setState(() {
-                         _endDate = selectedDay;
-                         _focusedDayEnd = focusedDay; // Actualiza el foco también
-                       });
-                     },
-                   ),
-                   const SizedBox(height: 30),
-
-                   // Botón Guardar
-                   PrimaryButton(
-                      text: _isLoading ? 'Guardando...' : buttonText, // Texto dinámico
-                      onPressed: _isLoading ? null : _handleSaveBudget,
-                   ),
-                 ],
+    return Container(
+      // Padding que se ajusta si aparece el teclado
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          // Permite scroll si el contenido no cabe
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min, // Hace que la columna tome el mínimo espacio
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Espacio superior
+              const SizedBox(height: 16),
+              // Encabezado
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: AppTextStyles.heading), // Título dinámico
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-           ),
+              const SizedBox(height: 24),
+
+              // Campo Monto
+              Text(
+                'Monto del presupuesto *',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              CustomInputField(
+                controller: _amountController,
+                labelText: '\$ 0.00',
+                prefixIcon: Icons.attach_money,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Por favor ingresa un monto';
+                  if (double.tryParse(value) == null)
+                    return 'Ingresa un número válido';
+                  if (double.parse(value) <= 0)
+                    return 'El monto debe ser positivo';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Calendario Inicio
+              Text(
+                'Fecha de inicio',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendar(
+                focusedDay: _focusedDayStart,
+                selectedDay: _startDate,
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _startDate = selectedDay;
+                    _focusedDayStart = focusedDay; // Actualiza el foco también
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Calendario Fin
+              Text(
+                'Fecha de fin',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendar(
+                focusedDay: _focusedDayEnd,
+                selectedDay: _endDate,
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _endDate = selectedDay;
+                    _focusedDayEnd = focusedDay; // Actualiza el foco también
+                  });
+                },
+              ),
+              const SizedBox(height: 30),
+
+              // Botón Guardar
+              PrimaryButton(
+                text: _isLoading
+                    ? 'Guardando...'
+                    : buttonText, // Texto dinámico
+                onPressed: _isLoading ? null : _handleSaveBudget,
+              ),
+            ],
+          ),
         ),
-     );
+      ),
+    );
   }
 
   // Helper para construir los calendarios
@@ -209,41 +248,43 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
     required Function(DateTime, DateTime) onDaySelected,
   }) {
     return Container(
-       decoration: BoxDecoration(
-         border: Border.all(color: Colors.grey.shade300),
-         borderRadius: BorderRadius.circular(12),
-       ),
-       child: TableCalendar(
-          locale: 'es_ES', // Locale español
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          focusedDay: focusedDay,
-          calendarFormat: CalendarFormat.month,
-          selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-          onDaySelected: onDaySelected,
-          // Actualizamos onPageChanged para el foco del calendario
-          onPageChanged: (focused) {
-             // No necesitamos setState aquí porque TableCalendar maneja su propio estado interno de foco
-             // Si quisiéramos guardar el mes enfocado, lo haríamos aquí
-             // _focusedDayStart = focused; o _focusedDayEnd = focused;
-          },
-          headerStyle: HeaderStyle(
-            formatButtonVisible: false,
-            titleCentered: true,
-            titleTextStyle: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TableCalendar(
+        locale: 'es_ES', // Locale español
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: focusedDay,
+        calendarFormat: CalendarFormat.month,
+        selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+        onDaySelected: onDaySelected,
+        // Actualizamos onPageChanged para el foco del calendario
+        onPageChanged: (focused) {
+          // No necesitamos setState aquí porque TableCalendar maneja su propio estado interno de foco
+          // Si quisiéramos guardar el mes enfocado, lo haríamos aquí
+          // _focusedDayStart = focused; o _focusedDayEnd = focused;
+        },
+        headerStyle: HeaderStyle(
+          formatButtonVisible: false,
+          titleCentered: true,
+          titleTextStyle: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.bold,
           ),
-          calendarStyle: CalendarStyle(
-            selectedDecoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              shape: BoxShape.circle,
-            ),
-            todayDecoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
+        ),
+        calendarStyle: CalendarStyle(
+          selectedDecoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            shape: BoxShape.circle,
           ),
-          availableGestures: AvailableGestures.horizontalSwipe,
-       ),
+          todayDecoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.5),
+            shape: BoxShape.circle,
+          ),
+        ),
+        availableGestures: AvailableGestures.horizontalSwipe,
+      ),
     );
   }
 }
