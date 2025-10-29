@@ -8,6 +8,7 @@ import '../../transactions/widgets/new_transaction_modal.dart';
 import '../../analysis/screens/analysis_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../../common/utils/show_snackbar.dart';
+import '../../../data/services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -28,6 +29,8 @@ class _MainScreenState extends State<MainScreen> {
   // Lista de widgets con sus claves asignadas
   late final List<Widget> _widgetOptions;
 
+  final NotificationService _notificationService = NotificationService();
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +44,7 @@ class _MainScreenState extends State<MainScreen> {
       const Text('Pestaña Aprende'), // Placeholder
       const ProfileScreen(), // Ya usa FutureBuilder para refrescarse
     ];
+    _notificationService.initialize();
   }
 
   void _onItemTapped(int index) {
