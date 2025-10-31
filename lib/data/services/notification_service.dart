@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api_service.dart'; // To send the token to the backend
 import '../../common/routing/navigator_key.dart'; // For navigation on tap
 import '../../common/routing/app_routes.dart';   // For navigation routes
-import 'package:flutter/material.dart';         // For showing alerts
+import 'package:flutter/material.dart';         // For showing alerts         
 
 // Optional: Background message handler (must be a top-level function)
 @pragma('vm:entry-point')
@@ -64,7 +64,7 @@ class NotificationService {
     try {
       print("Sending FCM token to backend...");
       // Make sure this endpoint exists in your backend (e.g., in students.py)
-      await _apiService.post('/students/me/fcm-token', {'fcm_token': token});
+      await _apiService.put('/students/me/fcm-token', {'fcm_token': token});
       print("FCM token sent successfully.");
     } catch (e) {
       print("Error sending FCM token to backend: $e");
