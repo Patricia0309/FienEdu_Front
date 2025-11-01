@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:fl_chart/fl_chart.dart'; // No usamos la gráfica de barras aquí
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/transaction_service.dart';
@@ -18,6 +19,7 @@ import '../widgets/set_budget_modal.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
+
   @override
   DashboardScreenState createState() => DashboardScreenState();
 }
@@ -27,8 +29,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   final UserService _userService = UserService();
   final BudgetService _budgetService = BudgetService();
 
+  // State Variables
   Student? _studentData;
-  List<Transaction> _transactionsData = []; // Inicializa como lista vacía
+  List<Transaction> _transactionsData = [];
   BudgetStatus? _budgetStatusData;
   bool _isLoading = true;
   String? _error;
@@ -39,9 +42,14 @@ class DashboardScreenState extends State<DashboardScreen> {
     _fetchDashboardData();
   }
 
+  // --- FUNCIÓN DE CARGA/RECARGA ---
   Future<void> _fetchDashboardData({bool isRefreshing = false}) async {
     if (isRefreshing || _studentData == null) {
-       setState(() { _isLoading = true; _error = null; });
+      if (mounted)
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
     }
 
     try {
@@ -61,51 +69,54 @@ class DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-       if (mounted) {
-         // Manejo de error si budgetStatus falla (404)
-         if (e.toString().contains('No tienes un período de presupuesto activo')) {
-           _fetchDataSafely(); // Llama al modo seguro
-         } else {
-           setState(() {
+      if (mounted) {
+        if (e.toString().contains(
+          'No tienes un período de presupuesto activo',
+        )) {
+          _fetchDataSafely();
+        } else {
+          setState(() {
             _error = e.toString().replaceFirst('Exception: ', '');
             _isLoading = false;
-           });
-         }
-       }
+          });
+        }
+      }
     }
   }
 
   // Modo seguro si getBudgetStatus falla con 404
   Future<void> _fetchDataSafely() async {
-     print("Ejecutando _fetchDataSafely (porque budget falló)");
-     try {
-       final results = await Future.wait([
-          _userService.getMe(),
-          _transactionService.getTransactions(),
-        ]);
-       if(mounted) {
-          setState(() {
-            _studentData = results[0] as Student;
-            _transactionsData = results[1] as List<Transaction>;
-            _budgetStatusData = null; // Sabemos que falló
-            _isLoading = false;
-          });
-       }
-     } catch(e) {
-         if (mounted) {
-           setState(() {
-            _error = e.toString().replaceFirst('Exception: ', '');
-            _isLoading = false;
-           });
-         }
-     }
+    print("Ejecutando _fetchDataSafely (porque budget falló)");
+    try {
+      final results = await Future.wait([
+        _userService.getMe(),
+        _transactionService.getTransactions(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _studentData = results[0] as Student;
+          _transactionsData = results[1] as List<Transaction>;
+          _budgetStatusData = null; // Sabemos que falló
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
   }
 
+  // --- MÉTODO DE REFRESCO PÚBLICO ---
   Future<void> refreshData() async {
     print("DashboardScreen: Refreshing data via refreshData()...");
     await _fetchDashboardData(isRefreshing: true);
   }
 
+  // --- MOSTRAR MODAL DE PRESUPUESTO ---
   void _showSetBudgetModal(BudgetStatus? currentStatus) async {
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -113,70 +124,107 @@ class DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => SetBudgetModal(initialBudgetStatus: currentStatus),
     );
-    if (saved == true) refreshData();
+    if (saved == true) {
+      refreshData();
+    }
   }
-
-  // Esta función ya no es necesaria aquí
-  // Map<String, dynamic> _processChartData(List<Transaction> transactions) { ... }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: _buildContent(),
     );
   }
 
+  // --- HELPER PARA CONSTRUIR EL CONTENIDO ---
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Error al cargar el dashboard: $_error'),
-          const SizedBox(height: 10),
-          ElevatedButton(onPressed: refreshData, child: const Text('Reintentar')),
-        ],
-      ));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Error al cargar el dashboard: $_error',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+                onPressed: refreshData,
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_studentData == null) {
-       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('No se pudieron cargar los datos del usuario.'),
-          const SizedBox(height: 10),
-          ElevatedButton(onPressed: refreshData, child: const Text('Reintentar')),
-        ],
-      ));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('No se pudieron cargar los datos del usuario.'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: refreshData,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
     }
 
+    // --- ESTADO DE ÉXITO ---
     final student = _studentData!;
-    final transactions = _transactionsData ?? []; // Usa lista vacía si es null
-    final budgetStatus = _budgetStatusData; // Puede ser null
+    final transactions = _transactionsData ?? [];
+    final budgetStatus = _budgetStatusData;
 
-    // --- LÓGICA DE CÁLCULO EN FLUTTER ---
+    // --- LÓGICA DE CÁLCULO EN FLUTTER (CORREGIDA) ---
     double presupuestoCalculado = 0.0;
     double gastosCalculados = 0.0;
 
     if (budgetStatus != null) {
-      // 1. El presupuesto SÍ viene del budgetStatus
       presupuestoCalculado = budgetStatus.totalIncome;
 
-      // 2. Calculamos los gastos NOSOTROS MISMOS, usando la lista de transacciones
+      // Usamos las fechas del presupuesto tal como vienen (asumimos que son UTC)
+      final DateTime budgetStart = budgetStatus.startDate;
+      final DateTime budgetEnd = budgetStatus.endDate;
+
+      print("DEBUG DASHBOARD: Rango de presupuesto: $budgetStart a $budgetEnd");
+
+      // Calculamos los gastos NOSOTROS MISMOS, usando la lista de transacciones
       gastosCalculados = transactions
-          .where((t) => 
-              t.type == TransactionType.gasto &&
-              !t.date.isBefore(budgetStatus.startDate) && // date >= start
-              !t.date.isAfter(budgetStatus.endDate.add(const Duration(days: 1)))) // date <= end (añadimos 1 día para incluir el día final)
+          .where((t) {
+            // t.date ya es un DateTime (probablemente en UTC de la API)
+
+            // Imprimimos la comparación para depurar
+            print(
+              "DEBUG DASHBOARD: Checando Tx ID ${t.id} (Fecha: ${t.date})... Es gasto? ${t.type == TransactionType.gasto}. Es después de inicio? ${!t.date.isBefore(budgetStart)}. Es antes de fin? ${!t.date.isAfter(budgetEnd)}",
+            );
+
+            return t.type == TransactionType.gasto &&
+                !t.date.isBefore(budgetStart) && // t.date >= budgetStart
+                !t.date.isAfter(budgetEnd); // t.date <= budgetEnd
+          })
           .fold(0.0, (sum, t) => sum + t.amount);
 
-       print("DEBUG DASHBOARD: Calculando gastos... Presupuesto: $presupuestoCalculado, Gasto (calculado en Flutter): $gastosCalculados");
-
+      print(
+        "DEBUG DASHBOARD: Calculando gastos... Presupuesto: $presupuestoCalculado, Gasto (calculado en Flutter): $gastosCalculados",
+      );
     } else {
-       print("DEBUG DASHBOARD: No hay presupuesto activo.");
+      print("DEBUG DASHBOARD: No hay presupuesto activo.");
     }
     // --- FIN DE LA LÓGICA ---
 
-
+    // Construimos la UI final
     return Scaffold(
       appBar: _buildAppBar(student), // Llama a la función helper
       body: RefreshIndicator(
@@ -188,7 +236,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // 3. Pasamos los valores calculados en Flutter
                 TotalMesCard(
                   presupuestoTotal: presupuestoCalculado,
                   totalGastos: gastosCalculados,
@@ -210,7 +257,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Función helper para el AppBar (la teníamos definida antes)
+  // --- FUNCIÓN HELPER PARA EL APPBAR ---
   AppBar _buildAppBar(Student student) {
     return AppBar(
       toolbarHeight: 80,
@@ -225,16 +272,26 @@ class DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Hola,', style: AppTextStyles.body.copyWith(color: Colors.white70)),
-            Text('${student.displayName ?? 'Usuario'} 👋', style: AppTextStyles.subtitle.copyWith(color: Colors.white)),
+            Text(
+              'Hola,',
+              style: AppTextStyles.body.copyWith(color: Colors.white70),
+            ),
+            Text(
+              '${student.displayName ?? 'Usuario'} 👋',
+              style: AppTextStyles.subtitle.copyWith(color: Colors.white),
+            ),
           ],
         ),
       ),
       actions: [
-         Padding(
-           padding: const EdgeInsets.only(right: 24.0),
-           child: SvgPicture.asset('assets/img/svg/Logo.1.svg', height: 40, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
-         ),
+        Padding(
+          padding: const EdgeInsets.only(right: 24.0),
+          child: SvgPicture.asset(
+            'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+            height: 40,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          ),
+        ),
       ],
       titleSpacing: 0,
     );
