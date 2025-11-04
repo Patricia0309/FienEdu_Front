@@ -1,4 +1,4 @@
-// Para el JSON de POST /analytics/profile
+// lib/features/analysis/models/profile_response_model.dart
 class ProfileResponse {
   final String profile;
   final String justification;

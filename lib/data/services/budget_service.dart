@@ -2,6 +2,8 @@ import 'dart:convert';
 import '../services/api_service.dart';
 import '../../features/budgets/models/budget_status_model.dart';
 import '../../features/budgets/models/income_period_model.dart';
+import '../../features/analysis/models/income_period_history_model.dart';
+
 
 class BudgetService {
   final ApiService _apiService = ApiService();
@@ -64,9 +66,10 @@ class BudgetService {
   }
 
   // Para Tarjeta 2: Historial de Presupuestos
-  Future<List<IncomePeriod>> getBudgetHistory() async {
+  Future<List<IncomePeriodHistory>> getBudgetHistory() async {
     final response = await _apiService.get('/budgets/history');
     final List<dynamic> listJson = json.decode(response.body);
-    return listJson.map((json) => IncomePeriod.fromJson(json)).toList();
+    // Usa el nuevo modelo IncomePeriodHistory
+    return listJson.map((json) => IncomePeriodHistory.fromJson(json)).toList(); 
   }
 }
