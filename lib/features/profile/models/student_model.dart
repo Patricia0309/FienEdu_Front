@@ -27,11 +27,9 @@ class Student {
         ) // Convierte cada item
         .toList();
     return Student(
-      id: json['id'],
-      email:
-          json['email'] as String? ??
-          '', // Usa un string vacío si el email es nulo
-      displayName: json['display_name'] as String? ?? 'Usuario',
+      id: json['id'] as int? ?? 0,
+      email: json['email'] as String? ?? '', // Seguro
+      displayName: json['display_name'] as String? ?? 'Usuario', // Seguro
       favoriteCategories: favCategoryList,
     );
   }

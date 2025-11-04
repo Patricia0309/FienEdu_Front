@@ -32,8 +32,9 @@ class BudgetService {
       return BudgetStatus.fromJson(statusJson);
     } catch (e) {
       // Si da error 404 (no hay período activo), devuelve null
-      if (e.toString().contains('404')) { // Simple check for 404
-         return null;
+      if (e.toString().contains('404')) {
+        // Simple check for 404
+        return null;
       }
       rethrow; // Re-lanza otros errores
     }
@@ -57,8 +58,15 @@ class BudgetService {
 
   // --- NUEVA FUNCIÓN (Opcional, si necesitas obtener un período específico) ---
   Future<IncomePeriod> getIncomePeriodById(int periodId) async {
-     final response = await _apiService.get('/budgets/income-period/$periodId');
-     final periodJson = json.decode(response.body);
-     return IncomePeriod.fromJson(periodJson);
+    final response = await _apiService.get('/budgets/income-period/$periodId');
+    final periodJson = json.decode(response.body);
+    return IncomePeriod.fromJson(periodJson);
+  }
+
+  // Para Tarjeta 2: Historial de Presupuestos
+  Future<List<IncomePeriod>> getBudgetHistory() async {
+    final response = await _apiService.get('/budgets/history');
+    final List<dynamic> listJson = json.decode(response.body);
+    return listJson.map((json) => IncomePeriod.fromJson(json)).toList();
   }
 }
