@@ -9,6 +9,7 @@ import '../../analysis/screens/analysis_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../../common/utils/show_snackbar.dart';
 import '../../../data/services/notification_service.dart';
+import '../../budgets/models/budget_status_model.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -55,15 +56,38 @@ class _MainScreenState extends State<MainScreen> {
 
   // Función para mostrar el modal (ahora llama a refresco)
   void _showNewTransactionModal(BuildContext context) async {
+    // 1. Obtenemos el estado del Dashboard usando la GlobalKey
+    final dashboardState = _dashboardKey.currentState;
+
+    // 2. Obtenemos el BudgetStatus (que expusimos en el Paso 1)
+    final BudgetStatus? budgetStatus = dashboardState?.currentBudgetStatus;
+
+    // 3. VALIDACIÓN: Si no hay presupuesto, no dejamos crear gastos
+    if (budgetStatus == null || !budgetStatus.isActive) {
+      if (mounted) {
+        showErrorSnackBar(
+          context,
+          'Debes tener un presupuesto activo para añadir transacciones.',
+        );
+      }
+      return; // No continuamos
+    }
+
+    // 4. Si todo está bien, obtenemos el ID
+    final int activePeriodId = budgetStatus.incomePeriodId;
+
+    // 5. Ahora sí mostramos el modal, PASÁNDOLE EL ID
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const NewTransactionModal(),
+      builder: (context) => NewTransactionModal(
+        incomePeriodId: activePeriodId, // <-- ¡ARREGLADO!
+      ),
     );
 
+    // 6. El resto de tu función de refresco (ya estaba bien)
     if (result == true) {
-      // Si se guardó exitosamente
       if (mounted) {
         showSuccessSnackBar(context, 'Transacción guardada exitosamente');
         _refreshCurrentTabData();

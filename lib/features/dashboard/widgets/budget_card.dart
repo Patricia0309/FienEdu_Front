@@ -1,6 +1,7 @@
 // lib/features/dashboard/widgets/budget_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // <-- 1. AÑADE ESTE IMPORT PARA FECHAS
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../budgets/models/budget_status_model.dart';
@@ -16,6 +17,7 @@ class BudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Esta lógica ya estaba perfecta
     final bool hasActiveBudget = budgetStatus != null;
     final String buttonText = hasActiveBudget
         ? 'Editar Presupuesto'
@@ -40,6 +42,7 @@ class BudgetCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- TÍTULO (Sin cambios) ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -50,9 +53,33 @@ class BudgetCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+
+          // --- 2. ¡CAMBIO VISUAL AQUÍ! ---
+          // Si hay un presupuesto, mostramos los detalles
+          if (hasActiveBudget) ...[
+            const SizedBox(height: 16),
+            _buildDetailRow(
+              'PRESUPUESTO:',
+              // Formateamos el monto como moneda
+              '\$${budgetStatus!.totalIncome.toStringAsFixed(2)}',
+            ),
+            const SizedBox(height: 8),
+            _buildDetailRow(
+              'PERIODO:',
+              // Formateamos las fechas
+              '${DateFormat('dd/MM/yy').format(budgetStatus!.startDate)} - ${DateFormat('dd/MM/yy').format(budgetStatus!.endDate)}',
+            ),
+            const SizedBox(height: 16),
+          ] else ...[
+            // Si no, dejamos el espacio original
+            const SizedBox(height: 16),
+          ],
+          // --- FIN DEL CAMBIO ---
+
+          // --- BOTÓN (Con corrección de icono) ---
           OutlinedButton.icon(
-            icon: const Icon(Icons.add, color: AppColors.accent1),
+            // 3. CORRECCIÓN: Usamos el icono dinámico
+            icon: Icon(buttonIcon, color: AppColors.accent1),
             label: Text(
               buttonText, // Texto dinámico
               style: AppTextStyles.body.copyWith(
@@ -60,8 +87,7 @@ class BudgetCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            onPressed:
-                onSetBudgetTap, // Call the function passed from Dashboard
+            onPressed: onSetBudgetTap, // Llama a la función del Dashboard
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
               foregroundColor: AppColors.accent1,
@@ -73,6 +99,30 @@ class BudgetCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // 4. WIDGET HELPER (para no repetir código y que se vea bien)
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.body.copyWith(color: Colors.grey.shade600),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTextStyles.body.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary, // Color principal
+            ),
+            softWrap: true, // Para que el texto se ajuste si no cabe
+          ),
+        ),
+      ],
     );
   }
 }

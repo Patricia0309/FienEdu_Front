@@ -14,7 +14,8 @@ import '../../../features/transactions/models/transaction_model.dart';
 import '../../../common/utils/show_snackbar.dart';
 
 class NewTransactionModal extends StatefulWidget {
-  const NewTransactionModal({super.key});
+  final int incomePeriodId;
+  const NewTransactionModal({super.key, required this.incomePeriodId});
 
   @override
   State<NewTransactionModal> createState() => _NewTransactionModalState();
@@ -67,6 +68,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
           categoryId: _selectedType == 'gasto' ? _selectedCategoryId : null,
           date: _selectedDate,
           note: _noteController.text,
+          incomePeriodId: widget.incomePeriodId,
         );
         if (mounted) Navigator.pop(context, true);
       } catch (e) {

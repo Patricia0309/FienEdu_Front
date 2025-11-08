@@ -20,6 +20,10 @@ import '../models/budget_tendency_model.dart';
 // Importa los widgets de las tarjetas
 import '../../dashboard/widgets/perfil_financiero_card.dart';
 import '../widgets/budget_history_row.dart';
+import '../widgets/tendencia_card.dart';
+import '../widgets/rules_card.dart';
+//provider
+import '../providers/tendency_provider.dart';
 
 class AnalysisScreen extends StatefulWidget {
   const AnalysisScreen({super.key});
@@ -33,7 +37,8 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   final UserService _userService = UserService();
   final TransactionService _transactionService = TransactionService();
   final BudgetService _budgetService = BudgetService();
-  final CategoryService _categoryService = CategoryService(); // <-- Asegúrate de tener esta línea
+  final CategoryService _categoryService =
+      CategoryService(); // <-- Asegúrate de tener esta línea
 
   late Future<Map<String, dynamic>> _dataFuture;
 
@@ -46,18 +51,48 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   // --- FUNCIÓN DE CARGA CORREGIDA ---
   Future<Map<String, dynamic>> _loadAnalysisData() async {
     final results = await Future.wait([
-      _analyticsService.getProfile().catchError((e) => ProfileResponse(profile: "Error", justification: e.toString(), recommendation: "")), // 0
-      _analyticsService.getRules().catchError((e) => <AprioriRule>[]),     // 1
-      _analyticsService.getTendency().catchError((e) => BudgetTendency(percentageChange: 0.0)),  // 2
-      _userService.getMe(),                                               // 3
-      _transactionService.getTransactions(),                              // 4
-      _budgetService.getBudgetHistory().catchError((e) => <IncomePeriodHistory>[]),  // 5
-      _categoryService.getCategories().catchError((e) => <Category>[]), // <-- 6. Carga todas las categorías
+      _analyticsService.getProfile().catchError(
+        (e) => ProfileResponse(
+          profile: "Error",
+          justification: e.toString(),
+          recommendation: "",
+        ),
+      ), // 0
+      _analyticsService.getRules().catchError((e) {
+        // --- DEBUG: Imprimimos el error ---
+        print('ERROR AL CARGAR REGLAS: $e');
+        // --- FIN DEBUG ---
+
+        return <AprioriRule>[]; // Devolvemos la lista vacía como antes
+      }),
+      _analyticsService.getTendency().catchError((e) {
+        // ¡ARREGLADO!
+        // Le damos valores por defecto a TODOS los campos requeridos
+        return BudgetTendency(
+          percentageChange: 0.0,
+          direction: 'neutral', // <-- El campo que faltaba
+          message:
+              'Error al cargar tendencia', // <-- Probablemente también es 'required'
+
+          currentPeriodSpending: 0.0,
+          previousPeriodSpending: 0.0,
+        );
+      }), // 2
+      _userService.getMe(), // 3
+      _transactionService.getTransactions(), // 4
+      _budgetService.getBudgetHistory().catchError(
+        (e) => <IncomePeriodHistory>[],
+      ), // 5
+      _categoryService.getCategories().catchError(
+        (e) => <Category>[],
+      ), // <-- 6. Carga todas las categorías
     ]);
-    
+
     // Creamos el mapa de categorías aquí
     final categories = results[6] as List<Category>;
-    final categoryMap = {for (var cat in categories) cat.id: cat}; // <-- Se crea el mapa
+    final categoryMap = {
+      for (var cat in categories) cat.id: cat,
+    }; // <-- Se crea el mapa
 
     return {
       'profile': results[0],
@@ -94,7 +129,9 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                 }
                 // --- ESTADO DE ERROR ---
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error al cargar análisis: ${snapshot.error}'));
+                  return Center(
+                    child: Text('Error al cargar análisis: ${snapshot.error}'),
+                  );
                 }
                 // --- ESTADO DE ÉXITO ---
                 if (snapshot.hasData) {
@@ -103,16 +140,24 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                   final rules = snapshot.data!['rules'] as List<AprioriRule>;
                   final tendency = snapshot.data!['tendency'] as BudgetTendency;
                   final student = snapshot.data!['student'] as Student;
-                  final transactions = snapshot.data!['transactions'] as List<Transaction>;
-                  final budgetHistory = snapshot.data!['budgetHistory'] as List<IncomePeriodHistory>;
-                  
+                  final transactions =
+                      snapshot.data!['transactions'] as List<Transaction>;
+                  final budgetHistory =
+                      snapshot.data!['budgetHistory']
+                          as List<IncomePeriodHistory>;
+
                   // --- CORRECCIÓN DEL ERROR ---
                   // Obtenemos el mapa de forma segura
-                  final categoryMap = snapshot.data!['categoryMap'] as Map<int, Category>?;
-                  
+                  final categoryMap =
+                      snapshot.data!['categoryMap'] as Map<int, Category>?;
+
                   // Si el mapa es nulo, es un error fatal (no debería pasar ahora)
                   if (categoryMap == null) {
-                     return const Center(child: Text('Error: No se pudo cargar el mapa de categorías.'));
+                    return const Center(
+                      child: Text(
+                        'Error: No se pudo cargar el mapa de categorías.',
+                      ),
+                    );
                   }
                   // --- FIN CORRECCIÓN ---
 
@@ -120,11 +165,20 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                   final totalGastos = transactions
                       .where((t) => t.type == TransactionType.gasto)
                       .fold(0.0, (sum, t) => sum + t.amount);
-                  final Set<int> favoriteCategoryIds = student.favoriteCategories.map((c) => c.id).toSet();
+                  final Set<int> favoriteCategoryIds = student
+                      .favoriteCategories
+                      .map((c) => c.id)
+                      .toSet();
                   final totalGastosFavoritos = transactions
-                      .where((t) => t.type == TransactionType.gasto && favoriteCategoryIds.contains(t.categoryId))
+                      .where(
+                        (t) =>
+                            t.type == TransactionType.gasto &&
+                            favoriteCategoryIds.contains(t.categoryId),
+                      )
                       .fold(0.0, (sum, t) => sum + t.amount);
-                  final double porcentajeFavorito = totalGastos > 0 ? (totalGastosFavoritos / totalGastos) * 100 : 0.0;
+                  final double porcentajeFavorito = totalGastos > 0
+                      ? (totalGastosFavoritos / totalGastos) * 100
+                      : 0.0;
 
                   return RefreshIndicator(
                     onRefresh: _refresh,
@@ -139,15 +193,18 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                             description: profile.justification,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Tarjeta 2: Historial de Presupuesto
                           _buildBudgetHistoryCard(budgetHistory),
                           const SizedBox(height: 16),
 
                           // Tarjeta 3: Gastos por Categoría (Cambié el nombre de la función)
-                          _buildGastosPorCategoriaCard(transactions, categoryMap),
+                          _buildGastosPorCategoriaCard(
+                            transactions,
+                            categoryMap,
+                          ),
                           const SizedBox(height: 16),
-                          
+
                           // Tarjeta 4: Tendencia de Gasto
                           _buildTendencyCard(tendency),
                           const SizedBox(height: 16),
@@ -171,43 +228,65 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   // --- WIDGETS HELPER PARA CONSTRUIR LA PANTALLA ---
 
   Widget _buildHeader(BuildContext context, {required VoidCallback onRefresh}) {
-     return Container(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, left: 16, right: 16, bottom: 16),
-        decoration: const BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Análisis Financiero', style: AppTextStyles.title.copyWith(color: Colors.white)),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              onPressed: onRefresh,
-            ),
-          ],
-        ),
-      );
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        bottom: 16,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Análisis Financiero',
+            style: AppTextStyles.title.copyWith(color: Colors.white),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: onRefresh,
+          ),
+        ],
+      ),
+    );
   }
-
 
   // Tarjeta 2: Historial Presupuesto
   Widget _buildBudgetHistoryCard(List<IncomePeriodHistory> history) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Historial de Presupuestos', style: AppTextStyles.heading),
           const SizedBox(height: 12), // <-- Reducido el espacio
-          
+
           if (history.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Text('Aún no tienes historial de presupuestos.', style: AppTextStyles.body.copyWith(color: Colors.grey.shade600)),
+                child: Text(
+                  'Aún no tienes historial de presupuestos.',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
             )
           else
@@ -216,7 +295,9 @@ class AnalysisScreenState extends State<AnalysisScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
-                return BudgetHistoryRow(budget: history[index]); // Usa el widget que ya creamos
+                return BudgetHistoryRow(
+                  budget: history[index],
+                ); // Usa el widget que ya creamos
               },
             ),
         ],
@@ -225,9 +306,13 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   // Tarjeta 3: Gastos por Categoría (Tu lógica original está bien)
-  Widget _buildGastosPorCategoriaCard(List<Transaction> transactions, Map<int, Category> categoryMap) {
-    
-    final List<Transaction> gastos = transactions.where((t) => t.type == TransactionType.gasto).toList();
+  Widget _buildGastosPorCategoriaCard(
+    List<Transaction> transactions,
+    Map<int, Category> categoryMap,
+  ) {
+    final List<Transaction> gastos = transactions
+        .where((t) => t.type == TransactionType.gasto)
+        .toList();
     final double totalGastos = gastos.fold(0.0, (sum, t) => sum + t.amount);
     final Map<int, double> gastosPorCategoriaId = {};
     for (var gasto in gastos) {
@@ -243,16 +328,31 @@ class AnalysisScreenState extends State<AnalysisScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Gastos por categoría', style: AppTextStyles.heading),
           Text('Últimos 30 días', style: AppTextStyles.small),
           const SizedBox(height: 2),
-          
+
           if (gastos.isEmpty)
-            Center(child: Text('Aún no tienes gastos registrados.', style: AppTextStyles.body))
+            Center(
+              child: Text(
+                'Aún no tienes gastos registrados.',
+                style: AppTextStyles.body,
+              ),
+            )
           else
             ListView.builder(
               itemCount: sortedGastos.length,
@@ -260,10 +360,14 @@ class AnalysisScreenState extends State<AnalysisScreen> {
               physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
                 final entry = sortedGastos[index];
-                final category = categoryMap[entry.key] ?? Category(id: 0, title: 'Desconocida', icon: '❓');
+                final category =
+                    categoryMap[entry.key] ??
+                    Category(id: 0, title: 'Desconocida', icon: '❓');
                 final double montoCategoria = entry.value;
-                final double porcentaje = totalGastos > 0 ? (montoCategoria / totalGastos) : 0.0;
-                
+                final double porcentaje = totalGastos > 0
+                    ? (montoCategoria / totalGastos)
+                    : 0.0;
+
                 return _buildCategoryRow(
                   categoryName: category.title,
                   amount: montoCategoria,
@@ -271,15 +375,21 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                 );
               },
             ),
-          
+
           const Divider(height: 24, thickness: 1),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total de Gastos', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
-              Text('\$${totalGastos.toStringAsFixed(0)}', style: AppTextStyles.heading.copyWith(color: AppColors.primary)),
+              Text(
+                'Total de Gastos',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '\$${totalGastos.toStringAsFixed(0)}',
+                style: AppTextStyles.heading.copyWith(color: AppColors.primary),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -287,73 +397,26 @@ class AnalysisScreenState extends State<AnalysisScreen> {
 
   // Tarjeta 4: Tendencia
   Widget _buildTendencyCard(BudgetTendency tendency) {
-    // Determina el estilo basado en si el valor es positivo/cero o negativo
-    final bool isUp = tendency.percentageChange >= 0;
-    final String arrow = isUp ? '↑' : '↓';
-    final Color color = isUp ? Colors.red : Colors.green; // Gasto 'arriba' es malo (rojo)
-    final String text = isUp ? 'aumentaron' : 'disminuyeron';
-
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(20), 
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5))]
-      ),
-      child: Row(
-        children: [
-          Icon(isUp ? Icons.trending_up : Icons.trending_down, color: color, size: 32),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tendencia', style: AppTextStyles.heading),
-                Text(
-                  '$arrow ${tendency.percentageChange.abs().toStringAsFixed(0)}%', 
-                  style: AppTextStyles.subtitle.copyWith(color: color)
-                ),
-                Text(
-                  'Tus gastos $text ${tendency.percentageChange.abs().toStringAsFixed(0)}% respecto al período anterior', 
-                  style: AppTextStyles.body
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
+    return TendenciaCard(tendencyData: tendency);
   }
 
   // Tarjeta 5: Reglas
   Widget _buildRulesCard(List<AprioriRule> rules) {
-     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5))]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [const Icon(Icons.rule, size: 24), const SizedBox(width: 12), Text('Reglas identificadas', style: AppTextStyles.heading)]),
-          const SizedBox(height: 16),
-          if (rules.isEmpty)
-            Text('Aún no hay suficientes datos para identificar reglas.', style: AppTextStyles.body)
-          else
-            ...rules.map((rule) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: _buildRuleRow('Si gastas en ${rule.antecedent}, tiendes a gastar en ${rule.consequent}'),
-            )).toList(),
-        ],
-      ),
-    );
+    return RulesCard(rules: rules);
   }
-  
+
   // Helper para la Tarjeta 5
   Widget _buildRuleRow(String text) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('• ', style: TextStyle(fontSize: 16, color: AppColors.secondary)),
-      Expanded(child: Text(text, style: AppTextStyles.body)),
-    ]);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '• ',
+          style: TextStyle(fontSize: 16, color: AppColors.secondary),
+        ),
+        Expanded(child: Text(text, style: AppTextStyles.body)),
+      ],
+    );
   }
 
   // Helper para la Tarjeta 3
@@ -371,7 +434,10 @@ class AnalysisScreenState extends State<AnalysisScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(categoryName, style: AppTextStyles.body),
-              Text('\$${amount.toStringAsFixed(0)}', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                '\$${amount.toStringAsFixed(0)}',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -394,7 +460,7 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                 style: AppTextStyles.small.copyWith(color: AppColors.secondary),
               ),
             ],
-          )
+          ),
         ],
       ),
     );

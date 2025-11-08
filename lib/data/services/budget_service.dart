@@ -4,25 +4,24 @@ import '../../features/budgets/models/budget_status_model.dart';
 import '../../features/budgets/models/income_period_model.dart';
 import '../../features/analysis/models/income_period_history_model.dart';
 
-
 class BudgetService {
   final ApiService _apiService = ApiService();
 
   // Crea un nuevo período de ingresos (presupuesto)
   Future<void> createIncomePeriod({
+    // 1. LA DEFINICIÓN: debe aceptar 'amount', 'startDate', y 'endDate'
     required double amount,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    // Convertimos las fechas a formato ISO 8601 String, que es lo que FastAPI espera
+    // 2. EL MAPA: convierte 'amount' en 'total_income' para la API
     final Map<String, dynamic> data = {
-      'amount': amount,
+      'total_income': amount, // <-- Así lo espera la API
       'start_date': startDate.toIso8601String(),
       'end_date': endDate.toIso8601String(),
     };
 
-    // Hacemos la llamada POST a través de nuestro ApiService
-    // Asumiendo que tu ApiService maneja la autenticación automáticamente
+    // 3. LA LLAMADA: (esto ya estaba bien)
     await _apiService.post('/budgets/income-period', data);
   }
 
@@ -44,17 +43,20 @@ class BudgetService {
 
   // Actualiza un período de ingresos existente
   Future<void> updateIncomePeriod({
+    // 1. LA DEFINICIÓN: también debe aceptar 'amount', 'startDate', etc.
     required int periodId,
     required double amount,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
+    // 2. EL MAPA: convierte 'amount' en 'total_income' para la API
     final Map<String, dynamic> data = {
-      'amount': amount,
+      'total_income': amount, // <-- Así lo espera la API
       'start_date': startDate.toIso8601String(),
       'end_date': endDate.toIso8601String(),
     };
-    // Llama al endpoint PUT con el ID en la URL
+
+    // 3. LA LLAMADA: (esto ya estaba bien)
     await _apiService.put('/budgets/income-period/$periodId', data);
   }
 
@@ -70,6 +72,6 @@ class BudgetService {
     final response = await _apiService.get('/budgets/history');
     final List<dynamic> listJson = json.decode(response.body);
     // Usa el nuevo modelo IncomePeriodHistory
-    return listJson.map((json) => IncomePeriodHistory.fromJson(json)).toList(); 
+    return listJson.map((json) => IncomePeriodHistory.fromJson(json)).toList();
   }
 }

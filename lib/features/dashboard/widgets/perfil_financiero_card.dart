@@ -4,7 +4,8 @@ import '../../../common/theme/app_text_styles.dart';
 
 class PerfilFinancieroCard extends StatelessWidget {
   final String profileName;
-  final String description; // Mantenemos el nombre de la variable como 'description'
+  final String
+  description; // Mantenemos el nombre de la variable como 'description'
 
   const PerfilFinancieroCard({
     super.key,
@@ -20,7 +21,13 @@ class PerfilFinancieroCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [ BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 5)) ]
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,18 +35,22 @@ class PerfilFinancieroCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Tu perfil financiero', style: AppTextStyles.heading),
+              Text('Perfil financiero', style: AppTextStyles.heading),
               Icon(Icons.track_changes_outlined, color: Colors.grey.shade600),
             ],
           ),
           const SizedBox(height: 12),
           Chip(
-            label: Text(profileName, style: AppTextStyles.small.copyWith(fontWeight: FontWeight.bold)),
+            label: Text(
+              profileName,
+              style: AppTextStyles.small.copyWith(fontWeight: FontWeight.bold),
+            ),
             backgroundColor: Colors.blue.shade100,
           ),
-          const SizedBox(height: 8),
-          // Muestra la 'justification' que viene del backend
-          Text(description, style: AppTextStyles.body), 
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(description, style: AppTextStyles.body),
+          ],
         ],
       ),
     );

@@ -16,6 +16,8 @@ import '../widgets/perfil_financiero_card.dart';
 import '../widgets/total_mes_card.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/set_budget_modal.dart';
+import '../../../data/services/analytics_service.dart';
+import '../../../features/analysis/models/profile_response_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -28,11 +30,14 @@ class DashboardScreenState extends State<DashboardScreen> {
   final TransactionService _transactionService = TransactionService();
   final UserService _userService = UserService();
   final BudgetService _budgetService = BudgetService();
+  final AnalyticsService _analyticsService = AnalyticsService();
 
   // State Variables
   Student? _studentData;
   List<Transaction> _transactionsData = [];
   BudgetStatus? _budgetStatusData;
+  BudgetStatus? get currentBudgetStatus => _budgetStatusData;
+  ProfileResponse? _profileData;
   bool _isLoading = true;
   String? _error;
 
@@ -57,7 +62,13 @@ class DashboardScreenState extends State<DashboardScreen> {
       final results = await Future.wait([
         _userService.getMe(),
         _transactionService.getTransactions(),
-        _budgetService.getBudgetStatus(), // Esta puede devolver null
+        _budgetService.getBudgetStatus(),
+
+        _analyticsService.getProfile().catchError((e) {
+          print("Error cargando perfil en Dashboard: $e");
+          return null; // Devuelve null si falla
+        }),
+        // Esta puede devolver null
       ]);
 
       if (mounted) {
@@ -65,6 +76,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           _studentData = results[0] as Student;
           _transactionsData = results[1] as List<Transaction>;
           _budgetStatusData = results[2] as BudgetStatus?;
+          _profileData = results[3] as ProfileResponse?;
           _isLoading = false;
         });
       }
@@ -91,11 +103,16 @@ class DashboardScreenState extends State<DashboardScreen> {
       final results = await Future.wait([
         _userService.getMe(),
         _transactionService.getTransactions(),
+        _analyticsService.getProfile().catchError((e) {
+          print("Error cargando perfil en Dashboard (Safe): $e");
+          return null;
+        }),
       ]);
       if (mounted) {
         setState(() {
           _studentData = results[0] as Student;
           _transactionsData = results[1] as List<Transaction>;
+          _profileData = results[2] as ProfileResponse?;
           _budgetStatusData = null; // Sabemos que falló
           _isLoading = false;
         });
@@ -186,6 +203,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     final student = _studentData!;
     final transactions = _transactionsData ?? [];
     final budgetStatus = _budgetStatusData;
+    final profile = _profileData;
 
     // --- LÓGICA DE CÁLCULO EN FLUTTER (CORREGIDA) ---
     double presupuestoCalculado = 0.0;
@@ -246,7 +264,11 @@ class DashboardScreenState extends State<DashboardScreen> {
                   onSetBudgetTap: () => _showSetBudgetModal(budgetStatus),
                 ),
                 const SizedBox(height: 16),
-                const PerfilFinancieroCard(),
+                PerfilFinancieroCard(
+                  profileName:
+                      profile?.profile ?? 'Calculando...', // Pasa el nombre
+                  description: '',
+                ),
                 const SizedBox(height: 16),
                 const DashboardActionsGrid(),
               ],

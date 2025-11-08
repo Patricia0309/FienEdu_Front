@@ -15,8 +15,13 @@ class AnalyticsService {
 
   // Tarjeta 5: Reglas Apriori
   Future<List<AprioriRule>> getRules() async {
-    final response = await _apiService.get('/analytics/rules');
-    final List<dynamic> listJson = json.decode(response.body);
+    // 1. Asegúrate que el endpoint sea el que me diste
+    final response = await _apiService.get('/analytics/me/rules');
+
+    // 2. Decodificamos usando utf8.decode para tildes (ej. "Alimentación")
+    final List<dynamic> listJson = json.decode(utf8.decode(response.bodyBytes));
+
+    // 3. Esto funcionará gracias al Paso 1
     return listJson.map((json) => AprioriRule.fromJson(json)).toList();
   }
 
