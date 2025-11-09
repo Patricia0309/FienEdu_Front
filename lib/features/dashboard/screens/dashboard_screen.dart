@@ -18,6 +18,8 @@ import '../widgets/budget_card.dart';
 import '../widgets/set_budget_modal.dart';
 import '../../../data/services/analytics_service.dart';
 import '../../../features/analysis/models/profile_response_model.dart';
+import '../../../features/analysis/models/recommendation_model.dart';
+import '../../../features/recommendations/screens/recommendations_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -38,6 +40,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   BudgetStatus? _budgetStatusData;
   BudgetStatus? get currentBudgetStatus => _budgetStatusData;
   ProfileResponse? _profileData;
+  List<Recommendation>? _recommendationsData; // <-- AÑADIR
   bool _isLoading = true;
   String? _error;
 
@@ -68,7 +71,11 @@ class DashboardScreenState extends State<DashboardScreen> {
           print("Error cargando perfil en Dashboard: $e");
           return null; // Devuelve null si falla
         }),
-        // Esta puede devolver null
+        _analyticsService.getRecommendations().catchError((e) {
+          // 4
+          print("Error cargando recomendaciones en Dashboard: $e");
+          return <Recommendation>[]; // Devuelve lista vacía si falla
+        }),
       ]);
 
       if (mounted) {
@@ -77,6 +84,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           _transactionsData = results[1] as List<Transaction>;
           _budgetStatusData = results[2] as BudgetStatus?;
           _profileData = results[3] as ProfileResponse?;
+          _recommendationsData = results[4] as List<Recommendation>?;
           _isLoading = false;
         });
       }
@@ -107,12 +115,18 @@ class DashboardScreenState extends State<DashboardScreen> {
           print("Error cargando perfil en Dashboard (Safe): $e");
           return null;
         }),
+        _analyticsService.getRecommendations().catchError((e) {
+          // 3
+          print("Error cargando recomendaciones en Dashboard (Safe): $e");
+          return <Recommendation>[];
+        }),
       ]);
       if (mounted) {
         setState(() {
           _studentData = results[0] as Student;
           _transactionsData = results[1] as List<Transaction>;
           _profileData = results[2] as ProfileResponse?;
+          _recommendationsData = results[3] as List<Recommendation>?;
           _budgetStatusData = null; // Sabemos que falló
           _isLoading = false;
         });
@@ -204,6 +218,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     final transactions = _transactionsData ?? [];
     final budgetStatus = _budgetStatusData;
     final profile = _profileData;
+    final recommendations = _recommendationsData ?? [];
 
     // --- LÓGICA DE CÁLCULO EN FLUTTER (CORREGIDA) ---
     double presupuestoCalculado = 0.0;
@@ -270,7 +285,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                   description: '',
                 ),
                 const SizedBox(height: 16),
-                const DashboardActionsGrid(),
+                DashboardActionsGrid(
+                  recommendationCount: recommendations.length,
+                ),
               ],
             ),
           ),

@@ -10,6 +10,7 @@ import '../../profile/screens/profile_screen.dart';
 import '../../../common/utils/show_snackbar.dart';
 import '../../../data/services/notification_service.dart';
 import '../../budgets/models/budget_status_model.dart';
+import '../../learn/screens/learn_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -42,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
       // Asegúrate que TransactionsScreen sea StatefulWidget
       TransactionsScreen(key: _transactionsKey),
       const AnalysisScreen(), // Podría necesitar key y refresh si muestra datos dinámicos
-      const Text('Pestaña Aprende'), // Placeholder
+      const LearnScreen(), // Placeholder
       const ProfileScreen(), // Ya usa FutureBuilder para refrescarse
     ];
     _notificationService.initialize();
