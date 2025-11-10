@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 // Importa los servicios y modelos necesarios
 import '../../../data/services/analytics_service.dart';
@@ -114,6 +115,7 @@ class _LearnScreenState extends State<LearnScreen> {
             child: CustomScrollView(
               slivers: [
                 _buildHeader(),
+                _buildLearnSubtitle(),
                 _buildRecommendationsCard(recommendations.length),
                 _buildLearnSectionTitle(),
 
@@ -148,37 +150,84 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildHeader() {
     return SliverToBoxAdapter(
       child: Container(
+        // 1. Padding copiado del estilo de "Análisis"
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
           top: MediaQuery.of(context).padding.top + 16,
-          bottom: 24,
+          left: 16,
+          right: 16,
+          bottom: 16,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.primary, // Tu verde principal
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+        // 2. Decoración copiada del estilo de "Análisis"
+        decoration: BoxDecoration(
+          color: AppColors.accent2.withOpacity(0.8),
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(30),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // 3. Layout de Row copiado del estilo de "Análisis"
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment:
+              CrossAxisAlignment.center, // Para centrar verticalmente
           children: [
-            Row(
+            // 4. Contenido de la izquierda (de "Aprende" pero con el estilo de "Análisis")
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.school_outlined,
-                  color: Colors.white,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Aprende',
-                  style: AppTextStyles.title.copyWith(color: Colors.white),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.school_outlined,
+                      color: AppColors.primary, // Color de "Análisis"
+                      size: 28,
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Aprende',
+                      style: AppTextStyles.title.copyWith(
+                        color: AppColors.primary,
+                      ), // Color de "Análisis"
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+
+            // 5. Contenido de la derecha (el logo, copiado de "Análisis")
+            SvgPicture.asset(
+              'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+              height: 40, // La altura de tu ejemplo de "Análisis"
+              colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLearnSubtitle() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        // Padding para separarlo del header
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+
+        // 1. Envuelto en un Row
+        child: Row(
+          children: [
+            // 2. El ícono que pediste (puedes cambiarlo)
+            Icon(
+              Icons.description_outlined,
+              size: 20,
+              color: Colors.grey.shade700,
+            ),
+            const SizedBox(width: 8), // 3. Espacio
+            // 4. Tu texto original
             Text(
-              'Microcontenidos de educación financiera',
-              style: AppTextStyles.body.copyWith(color: Colors.white70),
+              'Microcontenidos de\neducación financiera',
+              style: AppTextStyles.body.copyWith(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),

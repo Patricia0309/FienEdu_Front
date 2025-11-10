@@ -46,7 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     try {
       final student = await _userService.getMe();
-      if (mounted) { // Verifica si el widget todavía está en pantalla
+      if (mounted) {
+        // Verifica si el widget todavía está en pantalla
         setState(() {
           _studentData = student;
           _isLoading = false;
@@ -86,7 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (confirmed == true && mounted) {
       await _authService.logout();
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.welcome, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.welcome,
+        (route) => false,
+      );
     }
   }
 
@@ -108,7 +113,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Si ya tiene datos (_studentData != null), muestra los datos antiguos mientras recarga
       return _studentData == null
           ? const Center(child: CircularProgressIndicator())
-          : _buildProfileContent(_studentData!); // Muestra contenido antiguo mientras recarga
+          : _buildProfileContent(
+              _studentData!,
+            ); // Muestra contenido antiguo mientras recarga
     }
 
     // --- ESTADO DE ERROR ---
@@ -119,13 +126,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Error al cargar el perfil: $_error', textAlign: TextAlign.center),
+              Text(
+                'Error al cargar el perfil: $_error',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reintentar'),
                 onPressed: _loadProfileData,
-              )
+              ),
             ],
           ),
         ),
@@ -138,7 +148,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     // Estado por defecto (no debería ocurrir si la lógica es correcta)
-    return const Center(child: Text('No se pudo cargar la información del perfil.'));
+    return const Center(
+      child: Text('No se pudo cargar la información del perfil.'),
+    );
   }
 
   // Widget helper para construir el contenido principal del perfil
@@ -149,9 +161,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // --- 1. Encabezado ---
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 60, bottom: 80), // Más padding abajo para el overlap
+            padding: const EdgeInsets.only(
+              top: 60,
+              bottom: 80,
+            ), // Más padding abajo para el overlap
             decoration: const BoxDecoration(
-              color: AppColors.element, // Color del header
+              color: AppColors.accent2, // Color del header
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
             ),
             child: Column(
@@ -166,10 +181,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text('Mi Perfil', style: AppTextStyles.title.copyWith(color: AppColors.primary)),
+                Text(
+                  'Mi Perfil',
+                  style: AppTextStyles.title.copyWith(color: AppColors.primary),
+                ),
                 Text(
                   'Gestiona tu cuenta',
-                  style: AppTextStyles.body.copyWith(color: AppColors.primary.withOpacity(0.7)),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.primary.withOpacity(0.7),
+                  ),
                 ),
               ],
             ),
@@ -185,12 +205,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // --- 2. Tarjeta de Información Personal ---
                   UserInfoCard(student: student), // Usa el widget actualizado
                   const SizedBox(height: 24), // Espacio entre tarjetas
-
                   // --- 3. Tarjeta de Categorías ---
                   FavoriteCategoriesSection(
-                    key: ValueKey(student.favoriteCategories.hashCode), // Para forzar reconstrucción
+                    key: ValueKey(
+                      student.favoriteCategories.hashCode,
+                    ), // Para forzar reconstrucción
                     initialFavorites: student.favoriteCategories,
-                    onSaveSuccess: _loadProfileData, // Pasa la función de recarga
+                    onSaveSuccess:
+                        _loadProfileData, // Pasa la función de recarga
                   ),
                   const SizedBox(height: 30),
 
@@ -202,7 +224,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade400,
                       minimumSize: const Size(double.infinity, 56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 30), // Espacio al final

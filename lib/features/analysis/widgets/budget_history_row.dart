@@ -14,10 +14,10 @@ class BudgetHistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculamos el porcentaje, permitiendo que sea > 100%
-    final double percentageSpent = (budget.totalIncome > 0) 
-        ? (budget.totalSpent / budget.totalIncome) 
+    final double percentageSpent = (budget.totalIncome > 0)
+        ? (budget.totalSpent / budget.totalIncome)
         : 0;
-    
+
     // El gasto extra es cualquier gasto por encima del 100%
     final double extraSpent = (budget.totalSpent > budget.totalIncome)
         ? budget.totalSpent - budget.totalIncome
@@ -25,10 +25,11 @@ class BudgetHistoryRow extends StatelessWidget {
 
     // Para la barra de progreso, el valor debe estar entre 0 y 1
     final double progressBarValue = percentageSpent.clamp(0.0, 1.0);
-    
+
     // Formateamos las fechas
     final formatter = DateFormat('d MMM');
-    final String periodTitle = '${formatter.format(budget.startDate)} - ${formatter.format(budget.endDate)}';
+    final String periodTitle =
+        '${formatter.format(budget.startDate)} - ${formatter.format(budget.endDate)}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -39,7 +40,10 @@ class BudgetHistoryRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(periodTitle, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                periodTitle,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
               Text(
                 'Presupuesto: \$${budget.totalIncome.toStringAsFixed(0)}',
                 style: AppTextStyles.body.copyWith(color: AppColors.secondary),
@@ -59,14 +63,21 @@ class BudgetHistoryRow extends StatelessWidget {
                     minHeight: 12,
                     backgroundColor: AppColors.primary.withOpacity(0.1),
                     // Si se pasó, la barra se pone roja
-                    color: extraSpent > 0 ? Colors.red.shade400 : AppColors.primary,
+                    color: extraSpent > 0
+                        ? Colors.red.shade400
+                        : AppColors.primary,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '${(percentageSpent * 100).toStringAsFixed(0)}%',
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold, color: extraSpent > 0 ? Colors.red.shade400 : AppColors.primary),
+                style: AppTextStyles.body.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: extraSpent > 0
+                      ? Colors.red.shade400
+                      : AppColors.primary,
+                ),
               ),
             ],
           ),
@@ -77,8 +88,11 @@ class BudgetHistoryRow extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'Gasto Extra: \$${extraSpent.toStringAsFixed(0)}',
-                style: AppTextStyles.small.copyWith(color: Colors.red.shade600, fontWeight: FontWeight.bold),
+                'Gasto extra: \$${extraSpent.toStringAsFixed(0)}',
+                style: AppTextStyles.small.copyWith(
+                  color: Colors.red.shade600,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
         ],

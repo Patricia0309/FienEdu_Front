@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../common/theme/app_text_styles.dart';
 // 1. Importa la nueva pantalla
 import '../../recommendations/screens/recommendations_screen.dart';
+import '../../learn/screens/learn_screen.dart';
 
 class DashboardActionsGrid extends StatelessWidget {
   // 2. Acepta el conteo
@@ -24,6 +25,13 @@ class DashboardActionsGrid extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const RecommendationsScreen()),
+      );
+    }
+
+    void navigateToLearn() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LearnScreen()),
       );
     }
 
@@ -49,10 +57,7 @@ class DashboardActionsGrid extends StatelessWidget {
           icon: Icons.library_books_outlined,
           title: 'Aprender',
           subtitle: 'Contenidos',
-          onTap: () {
-            // TODO: Navegar a la pantalla de Aprender
-            print("Navegar a Aprender");
-          },
+          onTap: navigateToLearn,
         ),
       ],
     );

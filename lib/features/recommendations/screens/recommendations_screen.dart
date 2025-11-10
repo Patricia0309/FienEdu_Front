@@ -4,6 +4,7 @@ import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/analytics_service.dart';
 import '../../analysis/models/recommendation_model.dart'; // Importa el modelo
+import 'package:flutter_svg/flutter_svg.dart';
 
 class RecommendationsScreen extends StatefulWidget {
   const RecommendationsScreen({super.key});
@@ -44,6 +45,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           slivers: [
             // 2. Este es el nuevo encabezado verde
             SliverToBoxAdapter(child: _buildHeader()),
+            _buildSubtitle(),
 
             // 3. Este FutureBuilder ahora construye "Slivers"
             FutureBuilder<List<Recommendation>>(
@@ -88,51 +90,63 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     );
   }
 
-  // --- Widget helper para el encabezado verde ---
   Widget _buildHeader() {
     return Container(
       padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: MediaQuery.of(context).padding.top + 16, // Padding superior seguro
-        bottom: 24,
+        top:
+            MediaQuery.of(context).padding.top +
+            16, // Espacio para la barra de estado
+        left: 16,
+        right: 16,
+        bottom: 16,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.primary, // Asumiendo que este es tu verde
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+      decoration: BoxDecoration(
+        color: AppColors.accent2.withOpacity(
+          0.8,
+        ), // 1. El color de tu nuevo estilo
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
+      // 2. Eliminamos la Column y el Dropdown
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.stars_outlined,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Recomendaciones',
-                    style: AppTextStyles.title.copyWith(color: Colors.white),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Consejos personalizados para ti',
-                style: AppTextStyles.body.copyWith(color: Colors.white70),
-              ),
-            ],
+          // 3. Usamos el título de "Análisis" con el estilo de color nuevo
+          Text(
+            'Recomendaciones',
+            style: AppTextStyles.subtitle.copyWith(color: AppColors.primary),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _refresh,
+          SvgPicture.asset(
+            'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+            height: 60,
+            colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubtitle() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        // Añadimos padding para separarlo del header y de las tarjetas
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lightbulb_outline,
+              size: 20,
+              color: Colors.grey.shade700, // Un color más sutil
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Consejos personalizados para ti',
+              style: AppTextStyles.body.copyWith(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

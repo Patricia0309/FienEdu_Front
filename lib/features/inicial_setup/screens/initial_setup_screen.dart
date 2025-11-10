@@ -35,7 +35,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         'Pago de Tarjeta de Crédito, préstamos (educativos u otros), suscripciones (software, académicas)',
     'Alimentación': 'Supermercado, comidas fuera, domicilio, antojos o snacks',
     'Transporte':
-        'Transporte Público, apps de transporte, gasolina, mantenimiento o estacionamiento',
+        'Transporte público, apps de transporte, gasolina, mantenimiento o estacionamiento',
     'Compras y Cuidado Personal':
         'Ropa o calzado, peluquería, barbería, productos de aseo, tecnología o gadgets',
     'Ocio y Vida Social':

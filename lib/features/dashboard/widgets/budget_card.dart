@@ -20,8 +20,8 @@ class BudgetCard extends StatelessWidget {
     // Esta lógica ya estaba perfecta
     final bool hasActiveBudget = budgetStatus != null;
     final String buttonText = hasActiveBudget
-        ? 'Editar Presupuesto'
-        : 'Establecer Presupuesto';
+        ? 'Editar presupuesto'
+        : 'Establecer presupuesto';
     final IconData buttonIcon = hasActiveBudget
         ? Icons.edit_outlined
         : Icons.add;

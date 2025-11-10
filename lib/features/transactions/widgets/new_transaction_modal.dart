@@ -176,7 +176,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                       // --- Categoría (solo Gasto y usa favoritas) ---
                       if (_selectedType == 'gasto') ...[
                         Text(
-                          'Categoría *',
+                          'Categoría',
                           style: AppTextStyles.body.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -274,7 +274,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
 
                       // --- Monto ---
                       Text(
-                        'Monto *',
+                        'Monto',
                         style: AppTextStyles.body.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

@@ -299,6 +299,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   // --- FUNCIÓN HELPER PARA EL APPBAR ---
   AppBar _buildAppBar(Student student) {
     return AppBar(
+      automaticallyImplyLeading: false,
       toolbarHeight: 80,
       backgroundColor: AppColors.element,
       elevation: 0,

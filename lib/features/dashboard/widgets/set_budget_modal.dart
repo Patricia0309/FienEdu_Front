@@ -124,11 +124,11 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
   Widget build(BuildContext context) {
     // Título y texto del botón dinámicos
     final String title = _isEditing
-        ? 'Editar Presupuesto'
-        : 'Establecer Presupuesto';
+        ? 'Editar presupuesto'
+        : 'Establecer presupuesto';
     final String buttonText = _isEditing
-        ? 'Guardar Cambios'
-        : 'Guardar Presupuesto';
+        ? 'Guardar cambios'
+        : 'Guardar presupuesto';
 
     return Container(
       // Padding que se ajusta si aparece el teclado

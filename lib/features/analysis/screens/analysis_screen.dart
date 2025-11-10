@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 // Importa todos los servicios y modelos que usaremos
 import '../../../data/services/analytics_service.dart';
 import '../../../data/services/budget_service.dart';
@@ -230,25 +231,32 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   Widget _buildHeader(BuildContext context, {required VoidCallback onRefresh}) {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
+        top:
+            MediaQuery.of(context).padding.top +
+            16, // Espacio para la barra de estado
         left: 16,
         right: 16,
         bottom: 16,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+      decoration: BoxDecoration(
+        color: AppColors.accent2.withOpacity(
+          0.8,
+        ), // 1. El color de tu nuevo estilo
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
+      // 2. Eliminamos la Column y el Dropdown
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // 3. Usamos el título de "Análisis" con el estilo de color nuevo
           Text(
-            'Análisis Financiero',
-            style: AppTextStyles.title.copyWith(color: Colors.white),
+            'Análisis\nfinanciero',
+            style: AppTextStyles.title.copyWith(color: AppColors.primary),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: onRefresh,
+          SvgPicture.asset(
+            'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+            height: 60,
+            colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
           ),
         ],
       ),
@@ -274,7 +282,7 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Historial de Presupuestos', style: AppTextStyles.heading),
+          Text('Historial de presupuestos', style: AppTextStyles.heading),
           const SizedBox(height: 12), // <-- Reducido el espacio
 
           if (history.isEmpty)
