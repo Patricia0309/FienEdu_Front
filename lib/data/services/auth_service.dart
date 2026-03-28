@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.0.7:8000';
+  static const String _baseUrl = 'http://192.168.0.5:8000';
   //'http://10.0.2.2:8000';
   final _storage = const FlutterSecureStorage();
 
@@ -74,7 +74,7 @@ class AuthService {
       }
     } catch (e) {
       print('Excepción en signIn (llamada real): $e');
-      throw Exception('No se pudo conectar al servidor.');
+      throw Exception('Correo o contraseña incorrectas.');
     }
   }
 }

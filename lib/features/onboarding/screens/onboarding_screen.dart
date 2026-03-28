@@ -25,7 +25,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "icon": Icons.analytics_outlined,
       "title": "Analiza tus hábitos",
-      "description": "FindEdu identifica patrones en tus gastos.",
+      "description":
+          "Cuanto más la uses, más inteligente se vuelve. En 2 semanas verás tus primeros patrones de gasto.",
     },
     {
       "icon": Icons.lightbulb_outline,

@@ -68,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar Cierre de Sesión'),
+        title: const Text('Cerrar sesión'),
         content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
         actions: [
           TextButton(
@@ -78,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text(
-              'Cerrar Sesión',
+              'Cerrar sesión',
               style: TextStyle(color: Colors.red),
             ),
           ),

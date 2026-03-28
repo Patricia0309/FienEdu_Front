@@ -1,6 +1,8 @@
 // lib/features/main_app/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../transactions/screens/transactions_screen.dart';
@@ -21,32 +23,34 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // --- 1. Claves Globales para acceder a los States ---
   final GlobalKey<DashboardScreenState> _dashboardKey =
       GlobalKey<DashboardScreenState>();
   final GlobalKey<TransactionsScreenState> _transactionsKey =
       GlobalKey<TransactionsScreenState>();
-  // Añade más claves si otras pestañas necesitan refresco (ej. AnalysisScreen)
 
-  // Lista de widgets con sus claves asignadas
+  // Llaves para el tutorial
+  final GlobalKey _keyPresupuesto = GlobalKey();
+  final GlobalKey _keyTransaccion = GlobalKey();
+
   late final List<Widget> _widgetOptions;
-
   final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
-    // --- 2. Asigna las claves al crear los widgets ---
     _widgetOptions = <Widget>[
-      // Asegúrate que DashboardScreen sea StatefulWidget
-      DashboardScreen(key: _dashboardKey),
-      // Asegúrate que TransactionsScreen sea StatefulWidget
+      DashboardScreen(
+        key: _dashboardKey,
+        budgetKey: _keyPresupuesto,
+      ), // Esta usará la _keyPresupuesto por dentro
       TransactionsScreen(key: _transactionsKey),
-      const AnalysisScreen(), // Podría necesitar key y refresh si muestra datos dinámicos
-      const LearnScreen(), // Placeholder
-      const ProfileScreen(), // Ya usa FutureBuilder para refrescarse
+      const AnalysisScreen(),
+      const LearnScreen(),
+      const ProfileScreen(),
     ];
     _notificationService.initialize();
+
+    // NOTA: Quitamos el addPostFrameCallback de aquí porque ahora vive en el build
   }
 
   void _onItemTapped(int index) {
@@ -55,15 +59,10 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Función para mostrar el modal (ahora llama a refresco)
   void _showNewTransactionModal(BuildContext context) async {
-    // 1. Obtenemos el estado del Dashboard usando la GlobalKey
     final dashboardState = _dashboardKey.currentState;
-
-    // 2. Obtenemos el BudgetStatus (que expusimos en el Paso 1)
     final BudgetStatus? budgetStatus = dashboardState?.currentBudgetStatus;
 
-    // 3. VALIDACIÓN: Si no hay presupuesto, no dejamos crear gastos
     if (budgetStatus == null || !budgetStatus.isActive) {
       if (mounted) {
         showErrorSnackBar(
@@ -71,85 +70,115 @@ class _MainScreenState extends State<MainScreen> {
           'Debes tener un presupuesto activo para añadir transacciones.',
         );
       }
-      return; // No continuamos
+      return;
     }
 
-    // 4. Si todo está bien, obtenemos el ID
     final int activePeriodId = budgetStatus.incomePeriodId;
 
-    // 5. Ahora sí mostramos el modal, PASÁNDOLE EL ID
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => NewTransactionModal(
-        incomePeriodId: activePeriodId, // <-- ¡ARREGLADO!
-      ),
+      builder: (context) => NewTransactionModal(incomePeriodId: activePeriodId),
     );
 
-    // 6. El resto de tu función de refresco (ya estaba bien)
     if (result == true) {
       if (mounted) {
         showSuccessSnackBar(context, 'Transacción guardada exitosamente');
         _refreshCurrentTabData();
-        print(">>> LLAMANDO A REFRESCAR DATOS <<<");
       }
     }
   }
 
-  // --- 4. Función que refresca la pestaña activa ---
   void _refreshCurrentTabData() {
-    print("MainScreen: Transaction saved, refreshing relevant screens...");
-    // Llama a refreshData en el Dashboard SIEMPRE
     _dashboardKey.currentState?.refreshData();
-    // Llama a refreshData en Movimientos SIEMPRE
     _transactionsKey.currentState?.refreshData();
-
-    // No necesitas el switch(_selectedIndex) aquí
   }
-  // ----------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background, // Fondo correcto
-      body: Stack(
-        // Mantenemos el stack para el fondo opaco
-        children: [
-          Container(color: Colors.black.withOpacity(0.05)),
-          // Usamos IndexedStack para mantener el estado de las pestañas inactivas
-          IndexedStack(index: _selectedIndex, children: _widgetOptions),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showNewTransactionModal(context),
-        backgroundColor: const Color(0xFF4F772D),
-        child: const Icon(Icons.add, color: Colors.white),
-        shape: const CircleBorder(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz),
-            label: 'Movimientos',
+    // --- SOLUCIÓN AL ERROR DE BUILDER ---
+    return ShowCaseWidget(
+      onFinish: () => print("Tutorial terminado"),
+      // Aquí el cambio: Pasamos la función (context) => ... directamente
+      builder: (context) {
+        // Disparamos el tutorial cuando este contexto esté listo
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          // 1. Revisamos si ya vio el tutorial antes (Memoria local)
+          final prefs = await SharedPreferences.getInstance();
+          bool yaVioTutorial = prefs.getBool('tutorial_visto') ?? false;
+
+          // 2. Revisamos si tiene presupuesto activo (Usando tu lógica actual)
+          final dashboardState = _dashboardKey.currentState;
+          bool tienePresupuesto =
+              dashboardState?.currentBudgetStatus?.isActive ?? false;
+
+          // 3. SOLO SI es nuevo Y NO tiene presupuesto, lanzamos el tutorial
+          if (!yaVioTutorial && !tienePresupuesto) {
+            if (mounted) {
+              ShowCaseWidget.of(
+                context,
+              ).startShowCase([_keyPresupuesto, _keyTransaccion]);
+
+              // 4. Marcamos como "visto" para que no vuelva a salir nunca más
+              await prefs.setBool('tutorial_visto', true);
+            }
+          }
+        });
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: Stack(
+            children: [
+              Container(color: Colors.black.withOpacity(0.05)),
+              IndexedStack(index: _selectedIndex, children: _widgetOptions),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Análisis',
+
+          floatingActionButton: Showcase(
+            key: _keyTransaccion,
+            title: 'Registra tus gastos',
+            description:
+                'Cuando ya tengas un presupuesto, usa este botón para añadir tus movimientos.',
+            child: FloatingActionButton(
+              onPressed: () => _showNewTransactionModal(context),
+              backgroundColor: const Color(0xFF4F772D),
+              child: const Icon(Icons.add, color: Colors.white),
+              shape: const CircleBorder(),
+            ),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Aprende'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey.shade400,
-        showUnselectedLabels: true,
-      ),
+
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          bottomNavigationBar: BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.swap_horiz),
+                label: 'Movimientos',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart),
+                label: 'Análisis',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.school),
+                label: 'Aprende',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: Colors.grey.shade400,
+            showUnselectedLabels: true,
+          ),
+        );
+      },
     );
   }
 }

@@ -3,18 +3,27 @@ class ProfileResponse {
   final String profile;
   final String justification;
   final String recommendation;
+  final bool isCalculating;
+  final int currentCount;
+  final int goal;
 
   ProfileResponse({
     required this.profile,
     required this.justification,
     required this.recommendation,
+    required this.isCalculating,
+    required this.currentCount,
+    required this.goal,
   });
 
   factory ProfileResponse.fromJson(Map<String, dynamic> json) {
     return ProfileResponse(
-      profile: json['profile'] as String? ?? 'Desconocido',
-      justification: json['justification'] as String? ?? 'Sin descripción.',
-      recommendation: json['recommendation'] as String? ?? 'Sigue registrando.',
+      profile: json['profile'] as String? ?? '',
+      justification: json['justification'] as String? ?? '',
+      recommendation: json['recommendation'] as String? ?? '',
+      isCalculating: json['is_calculating'] as bool? ?? false,
+      currentCount: json['current_count'] as int? ?? 0,
+      goal: json['goal'] as int? ?? 15,
     );
   }
 }

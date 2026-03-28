@@ -57,6 +57,9 @@ class AnalysisScreenState extends State<AnalysisScreen> {
           profile: "Error",
           justification: e.toString(),
           recommendation: "",
+          isCalculating: false,
+          currentCount: 0,
+          goal: 15,
         ),
       ), // 0
       _analyticsService.getRules().catchError((e) {
@@ -190,8 +193,8 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                         children: [
                           // Tarjeta 1: Perfil Financiero
                           PerfilFinancieroCard(
-                            profileName: profile.profile,
-                            description: profile.justification,
+                            profileData:
+                                profile, // Ahora pasamos todo el objeto para que la tarjeta decida qué mostrar
                           ),
                           const SizedBox(height: 16),
 

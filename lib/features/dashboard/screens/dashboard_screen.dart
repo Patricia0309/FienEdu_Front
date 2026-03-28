@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// import 'package:fl_chart/fl_chart.dart'; // No usamos la gráfica de barras aquí
+import 'package:showcaseview/showcaseview.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/transaction_service.dart';
@@ -22,7 +22,12 @@ import '../../../features/analysis/models/recommendation_model.dart';
 import '../../../features/recommendations/screens/recommendations_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  final GlobalKey budgetKey; // 1. Declaramos que recibiremos una llave
+
+  const DashboardScreen({
+    Key? key,
+    required this.budgetKey, // 2. La pedimos como obligatoria
+  }) : super(key: key);
 
   @override
   DashboardScreenState createState() => DashboardScreenState();
@@ -274,15 +279,24 @@ class DashboardScreenState extends State<DashboardScreen> {
                   totalGastos: gastosCalculados,
                 ),
                 const SizedBox(height: 16),
-                BudgetCard(
-                  budgetStatus: budgetStatus,
-                  onSetBudgetTap: () => _showSetBudgetModal(budgetStatus),
+                Showcase(
+                  key: widget
+                      .budgetKey, // Usamos la llave que definimos en el constructor
+                  title: 'Paso 1: Define tu presupuesto',
+                  description:
+                      'Para que FinEdu funcione, primero dinos cuánto planeas gastar en este periodo.',
+                  targetPadding: const EdgeInsets.all(
+                    8,
+                  ), // Le damos un poquito de espacio visual
+                  child: BudgetCard(
+                    budgetStatus: budgetStatus,
+                    onSetBudgetTap: () => _showSetBudgetModal(budgetStatus),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 PerfilFinancieroCard(
-                  profileName:
-                      profile?.profile ?? 'Calculando...', // Pasa el nombre
-                  description: '',
+                  profileData:
+                      _profileData, // Ahora pasamos todo el objeto para que la tarjeta decida qué mostrar
                 ),
                 const SizedBox(height: 16),
                 DashboardActionsGrid(
