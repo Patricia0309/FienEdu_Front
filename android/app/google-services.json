@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "195831746860",
+    "project_id": "findedu-8021c",
+    "storage_bucket": "findedu-8021c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195831746860:android:65f1a960e3455181689c89",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDK38dliIWxrLnOeGiZQaj8lR0_-XiX15o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
