@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/routing/app_routes.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../common/widgets/custom_input_field.dart';
@@ -29,8 +30,21 @@ class _SignInScreenState extends State<SignInScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+      // 2. GUARDAR LA SESIÓN (Persistencia)
+      // Esto es lo que evita que la sesión se cierre al salir de la app
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      // Si tu servicio devuelve un token, guárdalo también aquí:
+      await prefs.setString('auth_token', 'token_recibido');
       if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        // 3. NAVEGACIÓN LIMPIA
+        // Usamos pushNamedAndRemoveUntil para que el usuario NO pueda
+        // regresar al Login ni por error.
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.dashboard,
+          (route) => false, // Esto borra todo el historial de pantallas previas
+        );
       }
     } catch (e) {
       if (mounted) {

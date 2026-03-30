@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/widgets/primary_button.dart';
 import '../widgets/onboarding_page_content.dart';
 import '../../../common/routing/app_routes.dart';
@@ -59,6 +60,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       print(
         "Políticas aceptadas. Navegando a la pantalla de Registro/Login...",
       );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isFirstTime', false);
       // Usamos 'mounted' para asegurarnos de que el widget todavía está en pantalla
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.welcome);

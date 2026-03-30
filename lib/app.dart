@@ -11,7 +11,9 @@ import 'features/main_app/screens/main_screen.dart';
 import 'common/routing/navigator_key.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isFirstTime;
+  final bool isLoggedIn;
+  const MyApp({super.key, required this.isFirstTime, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +23,12 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
 
+      initialRoute: _getInitialRoute(),
+
       // Define la ruta inicial y el mapa de rutas
-      initialRoute: AppRoutes.onboarding,
       routes: {
         AppRoutes.onboarding: (context) => const OnboardingScreen(),
-        AppRoutes.welcome: (context) => const WelcomeScreen(), 
+        AppRoutes.welcome: (context) => const WelcomeScreen(),
         AppRoutes.signup: (context) => const SignUpScreen(),
         AppRoutes.signin: (context) => const SignInScreen(),
         AppRoutes.profileSetup: (context) => const ProfileSetupScreen(),
@@ -33,5 +36,15 @@ class MyApp extends StatelessWidget {
         AppRoutes.dashboard: (context) => const MainScreen(),
       },
     );
+  }
+
+  String _getInitialRoute() {
+    if (isFirstTime) {
+      return AppRoutes.onboarding;
+    } else if (isLoggedIn) {
+      return AppRoutes.dashboard;
+    } else {
+      return AppRoutes.welcome; // O AppRoutes.signin, según prefieras
+    }
   }
 }
