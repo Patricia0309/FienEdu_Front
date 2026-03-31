@@ -7,6 +7,16 @@ import '../../features/analysis/models/income_period_history_model.dart';
 class BudgetService {
   final ApiService _apiService = ApiService();
 
+  // Función auxiliar para limpiar la fecha (solo año-mes-día)
+  String _formatDate(DateTime date, {bool isEnd = false}) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    // Si es fin de día, le ponemos las 23:59:59 para que abarque todo el día
+    final time = isEnd ? "23:59:59Z" : "00:00:00Z";
+    return "$year-$month-${day}T$time";
+  }
+
   // Crea un nuevo período de ingresos (presupuesto)
   Future<void> createIncomePeriod({
     // 1. LA DEFINICIÓN: debe aceptar 'amount', 'startDate', y 'endDate'
@@ -17,8 +27,8 @@ class BudgetService {
     // 2. EL MAPA: convierte 'amount' en 'total_income' para la API
     final Map<String, dynamic> data = {
       'total_income': amount, // <-- Así lo espera la API
-      'start_date': startDate.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
+      'start_date': _formatDate(startDate),
+      'end_date': _formatDate(endDate, isEnd: true),
     };
 
     // 3. LA LLAMADA: (esto ya estaba bien)
@@ -29,6 +39,7 @@ class BudgetService {
   Future<BudgetStatus?> getBudgetStatus() async {
     try {
       final response = await _apiService.get('/budgets/status');
+      if (response.body.isEmpty || response.body == 'null') return null;
       final statusJson = json.decode(response.body);
       return BudgetStatus.fromJson(statusJson);
     } catch (e) {
@@ -52,8 +63,8 @@ class BudgetService {
     // 2. EL MAPA: convierte 'amount' en 'total_income' para la API
     final Map<String, dynamic> data = {
       'total_income': amount, // <-- Así lo espera la API
-      'start_date': startDate.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
+      'start_date': _formatDate(startDate),
+      'end_date': _formatDate(endDate, isEnd: true),
     };
 
     // 3. LA LLAMADA: (esto ya estaba bien)

@@ -69,7 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        content: const Text('¿Estás segur@ de que quieres cerrar sesión?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -87,11 +87,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (confirmed == true && mounted) {
       await _authService.logout();
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.welcome,
-        (route) => false,
-      );
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.welcome,
+          (route) => false,
+        );
+      }
     }
   }
 

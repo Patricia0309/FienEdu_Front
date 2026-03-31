@@ -3,9 +3,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.0.5:8000';
+  static const String _baseUrl = 'http://137.184.85.162:8000';
   //'http://10.0.2.2:8000';
   final _storage = const FlutterSecureStorage();
 
@@ -18,7 +19,15 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    // 1. Borramos el token (Seguridad)
     await _storage.delete(key: 'access_token');
+
+    // 2. Avisamos que ya NO hay sesión (Estado de la App)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+
+    // NOTA: No tocamos 'isFirstTime' para que el tutorial no vuelva a salir.
+    print('Sesión cerrada y token eliminado.');
   }
 
   Future<void> signUp({
@@ -65,6 +74,8 @@ class AuthService {
         final responseData = json.decode(response.body);
         final String accessToken = responseData['access_token'];
         await _saveToken(accessToken);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
         print('Inicio de sesión exitoso. Token guardado.');
       } else {
         final responseBody = json.decode(response.body);

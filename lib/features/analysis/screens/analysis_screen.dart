@@ -1,10 +1,8 @@
 // lib/features/analysis/screens/analysis_screen.dart
-
 import 'package:flutter/material.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// Importa todos los servicios y modelos que usaremos
 import '../../../data/services/analytics_service.dart';
 import '../../../data/services/budget_service.dart';
 import '../../../data/services/transaction_service.dart';
@@ -110,10 +108,12 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   // Función de refresco
-  Future<void> _refresh() async {
-    setState(() {
-      _dataFuture = _loadAnalysisData();
-    });
+  Future<void> refreshData() async {
+    if (mounted) {
+      setState(() {
+        _dataFuture = _loadAnalysisData();
+      });
+    }
   }
 
   @override
@@ -122,71 +122,90 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          _buildHeader(context, onRefresh: _refresh),
+          _buildHeader(context, onRefresh: refreshData),
           Expanded(
-            child: FutureBuilder<Map<String, dynamic>>(
-              future: _dataFuture,
-              builder: (context, snapshot) {
-                // --- ESTADO DE CARGA ---
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                // --- ESTADO DE ERROR ---
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error al cargar análisis: ${snapshot.error}'),
-                  );
-                }
-                // --- ESTADO DE ÉXITO ---
-                if (snapshot.hasData) {
-                  // Obtenemos todos los datos
-                  final profile = snapshot.data!['profile'] as ProfileResponse;
-                  final rules = snapshot.data!['rules'] as List<AprioriRule>;
-                  final tendency = snapshot.data!['tendency'] as BudgetTendency;
-                  final student = snapshot.data!['student'] as Student;
-                  final transactions =
-                      snapshot.data!['transactions'] as List<Transaction>;
-                  final budgetHistory =
-                      snapshot.data!['budgetHistory']
-                          as List<IncomePeriodHistory>;
-
-                  // --- CORRECCIÓN DEL ERROR ---
-                  // Obtenemos el mapa de forma segura
-                  final categoryMap =
-                      snapshot.data!['categoryMap'] as Map<int, Category>?;
-
-                  // Si el mapa es nulo, es un error fatal (no debería pasar ahora)
-                  if (categoryMap == null) {
-                    return const Center(
-                      child: Text(
-                        'Error: No se pudo cargar el mapa de categorías.',
+            child: RefreshIndicator(
+              onRefresh: refreshData,
+              color: AppColors.element,
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _dataFuture,
+                builder: (context, snapshot) {
+                  // --- ESTADO DE CARGA ---
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: 400, // Un espacio para que se vea el spinner
+                        child: Center(child: CircularProgressIndicator()),
                       ),
                     );
                   }
-                  // --- FIN CORRECCIÓN ---
+                  // --- ESTADO DE ERROR ---
+                  if (snapshot.hasError) {
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: 500,
+                        padding: const EdgeInsets.all(20),
+                        child: Center(
+                          child: Text(
+                            'Ocurrió un error: ${snapshot.error}\n\nJala hacia abajo para reintentar.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  // --- ESTADO DE ÉXITO ---
+                  if (snapshot.hasData) {
+                    // Obtenemos todos los datos
+                    final profile =
+                        snapshot.data!['profile'] as ProfileResponse;
+                    final rules = snapshot.data!['rules'] as List<AprioriRule>;
+                    final tendency =
+                        snapshot.data!['tendency'] as BudgetTendency;
+                    final student = snapshot.data!['student'] as Student;
+                    final transactions =
+                        snapshot.data!['transactions'] as List<Transaction>;
+                    final budgetHistory =
+                        snapshot.data!['budgetHistory']
+                            as List<IncomePeriodHistory>;
 
-                  // Procesamos los datos para la Tarjeta 3 (Gastos por Cat. Favorita)
-                  final totalGastos = transactions
-                      .where((t) => t.type == TransactionType.gasto)
-                      .fold(0.0, (sum, t) => sum + t.amount);
-                  final Set<int> favoriteCategoryIds = student
-                      .favoriteCategories
-                      .map((c) => c.id)
-                      .toSet();
-                  final totalGastosFavoritos = transactions
-                      .where(
-                        (t) =>
-                            t.type == TransactionType.gasto &&
-                            favoriteCategoryIds.contains(t.categoryId),
-                      )
-                      .fold(0.0, (sum, t) => sum + t.amount);
-                  final double porcentajeFavorito = totalGastos > 0
-                      ? (totalGastosFavoritos / totalGastos) * 100
-                      : 0.0;
+                    // --- CORRECCIÓN DEL ERROR ---
+                    // Obtenemos el mapa de forma segura
+                    final categoryMap =
+                        snapshot.data!['categoryMap'] as Map<int, Category>?;
 
-                  return RefreshIndicator(
-                    onRefresh: _refresh,
-                    child: SingleChildScrollView(
+                    // Si el mapa es nulo, es un error fatal (no debería pasar ahora)
+                    if (categoryMap == null) {
+                      return const Center(
+                        child: Text(
+                          'Error: No se pudo cargar el mapa de categorías.',
+                        ),
+                      );
+                    }
+                    // --- FIN CORRECCIÓN ---
+
+                    // Procesamos los datos para la Tarjeta 3 (Gastos por Cat. Favorita)
+                    final totalGastos = transactions
+                        .where((t) => t.type == TransactionType.gasto)
+                        .fold(0.0, (sum, t) => sum + t.amount);
+                    final Set<int> favoriteCategoryIds = student
+                        .favoriteCategories
+                        .map((c) => c.id)
+                        .toSet();
+                    final totalGastosFavoritos = transactions
+                        .where(
+                          (t) =>
+                              t.type == TransactionType.gasto &&
+                              favoriteCategoryIds.contains(t.categoryId),
+                        )
+                        .fold(0.0, (sum, t) => sum + t.amount);
+                    final double porcentajeFavorito = totalGastos > 0
+                        ? (totalGastosFavoritos / totalGastos) * 100
+                        : 0.0;
+
+                    return SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -217,11 +236,14 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                           _buildRulesCard(rules),
                         ],
                       ),
-                    ),
+                    );
+                  }
+                  return const SingleChildScrollView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    child: Center(child: Text('No hay datos.')),
                   );
-                }
-                return const Center(child: Text('No hay datos.'));
-              },
+                },
+              ),
             ),
           ),
         ],
@@ -476,4 +498,4 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       ),
     );
   }
-} // Fin de la clase _AnalysisScreenState
+}

@@ -34,6 +34,8 @@ class _MainScreenState extends State<MainScreen> {
 
   late final List<Widget> _widgetOptions;
   final NotificationService _notificationService = NotificationService();
+  final GlobalKey<AnalysisScreenState> _analysisKey =
+      GlobalKey<AnalysisScreenState>();
 
   @override
   void initState() {
@@ -44,7 +46,7 @@ class _MainScreenState extends State<MainScreen> {
         budgetKey: _keyPresupuesto,
       ), // Esta usará la _keyPresupuesto por dentro
       TransactionsScreen(key: _transactionsKey),
-      const AnalysisScreen(),
+      AnalysisScreen(key: _analysisKey),
       const LearnScreen(),
       const ProfileScreen(),
     ];
@@ -57,6 +59,9 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 2) {
+      _analysisKey.currentState?.refreshData();
+    }
   }
 
   void _showNewTransactionModal(BuildContext context) async {
@@ -93,6 +98,7 @@ class _MainScreenState extends State<MainScreen> {
   void _refreshCurrentTabData() {
     _dashboardKey.currentState?.refreshData();
     _transactionsKey.currentState?.refreshData();
+    _analysisKey.currentState?.refreshData();
   }
 
   @override

@@ -39,12 +39,18 @@ class MyApp extends StatelessWidget {
   }
 
   String _getInitialRoute() {
+    // 1. PRIORIDAD TOTAL: Si ya inició sesión, va al Dashboard.
+    // No importa si es su primera vez o no, queremos que vea sus finanzas.
+    if (isLoggedIn) {
+      return AppRoutes.dashboard;
+    }
+
+    // 2. Si NO hay sesión, revisamos si es su primera vez para darle el tour.
     if (isFirstTime) {
       return AppRoutes.onboarding;
-    } else if (isLoggedIn) {
-      return AppRoutes.dashboard;
-    } else {
-      return AppRoutes.welcome; // O AppRoutes.signin, según prefieras
     }
+
+    // 3. Si ya vio el tour pero no tiene sesión, va al Welcome/Login.
+    return AppRoutes.welcome;
   }
 }
