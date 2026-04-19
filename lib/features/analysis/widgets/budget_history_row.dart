@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
-import '../models/income_period_history_model.dart';
+import '../../budgets/models/income_period_history_model.dart';
 
 class BudgetHistoryRow extends StatelessWidget {
   final IncomePeriodHistory budget;

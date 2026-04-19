@@ -8,11 +8,15 @@ import '../../budgets/models/budget_status_model.dart';
 
 class BudgetCard extends StatelessWidget {
   final VoidCallback onSetBudgetTap;
+  final VoidCallback onSelectBudgetTap;
   final BudgetStatus? budgetStatus;
+  final bool hasHistory; // <-- 2. NUEVO CAMPO PARA SABER SI HAY HISTORIAL
   const BudgetCard({
     super.key,
     required this.onSetBudgetTap,
+    required this.onSelectBudgetTap,
     this.budgetStatus,
+    this.hasHistory = true,
   });
 
   @override
@@ -97,6 +101,29 @@ class BudgetCard extends StatelessWidget {
               ),
             ),
           ),
+          if (hasHistory) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onSelectBudgetTap,
+              icon: const Icon(
+                Icons.history,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              label: Text(
+                'Ver presupuestos anteriores',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.underline, // Un toque de estilo
+                ),
+              ),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(double.infinity, 40),
+              ),
+            ),
+          ],
         ],
       ),
     );

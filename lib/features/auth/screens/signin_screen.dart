@@ -1,3 +1,4 @@
+import 'package:FinEdu/features/auth/screens/forgot_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -129,6 +130,28 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // --- Olvidé mi contraseña ---
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            // Navegamos a la pantalla que creamos hace un momento
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            '¿Olvidaste tu contraseña?',
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),

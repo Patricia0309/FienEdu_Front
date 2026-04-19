@@ -1,4 +1,4 @@
-package com.example.frontend
+package com.finedu.tesisSMPI.mx
 
 import io.flutter.embedding.android.FlutterActivity
 

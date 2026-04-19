@@ -2,7 +2,7 @@ import 'dart:convert';
 import '../services/api_service.dart';
 import '../../features/budgets/models/budget_status_model.dart';
 import '../../features/budgets/models/income_period_model.dart';
-import '../../features/analysis/models/income_period_history_model.dart';
+import '../../features/budgets/models/income_period_history_model.dart';
 
 class BudgetService {
   final ApiService _apiService = ApiService();
@@ -31,7 +31,6 @@ class BudgetService {
       'end_date': _formatDate(endDate, isEnd: true),
     };
 
-    // 3. LA LLAMADA: (esto ya estaba bien)
     await _apiService.post('/budgets/income-period', data);
   }
 
@@ -67,8 +66,17 @@ class BudgetService {
       'end_date': _formatDate(endDate, isEnd: true),
     };
 
-    // 3. LA LLAMADA: (esto ya estaba bien)
-    await _apiService.put('/budgets/income-period/$periodId', data);
+    final response = await _apiService.put(
+      '/budgets/income-period/$periodId',
+      data,
+    );
+
+    // 2. Si el código es 400 (o cualquier error), extraemos el 'detail'
+    if (response.statusCode >= 400) {
+      final Map<String, dynamic> errorBody = json.decode(response.body);
+      // Lanzamos SOLO el texto que viene en 'detail'
+      throw errorBody['detail'] ?? 'Error inesperado en el servidor';
+    }
   }
 
   // --- NUEVA FUNCIÓN (Opcional, si necesitas obtener un período específico) ---
@@ -84,5 +92,19 @@ class BudgetService {
     final List<dynamic> listJson = json.decode(response.body);
     // Usa el nuevo modelo IncomePeriodHistory
     return listJson.map((json) => IncomePeriodHistory.fromJson(json)).toList();
+  }
+
+  Future<void> deleteIncomePeriod(int periodId) async {
+    // Usamos el método DELETE de tu ApiService
+    final response = await _apiService.delete(
+      '/budgets/income-period/$periodId',
+    );
+
+    if (response.statusCode >= 400) {
+      final errorBody = json.decode(response.body);
+      throw Exception(
+        errorBody['detail'] ?? 'No se pudo eliminar el presupuesto',
+      );
+    }
   }
 }

@@ -4,6 +4,7 @@ import '../../features/analysis/models/profile_response_model.dart';
 import '../../features/analysis/models/apriori_rule_model.dart';
 import '../../features/analysis/models/budget_tendency_model.dart';
 import '../../features/analysis/models/recommendation_model.dart';
+import '../../features/analysis/models/category_spending_model.dart';
 
 class AnalyticsService {
   final ApiService _apiService = ApiService();
@@ -42,5 +43,24 @@ class AnalyticsService {
     final List<dynamic> listJson = json.decode(utf8.decode(response.bodyBytes));
 
     return listJson.map((json) => Recommendation.fromJson(json)).toList();
+  }
+
+  Future<CategorySpendingResponse?> getActiveCategorySpending() async {
+    final response = await _apiService.get('/analytics/category-spending');
+    if (response.body == 'null' || response.statusCode == 404) return null;
+
+    // ⭐ USA utf8.decode para los acentos de las categorías
+    final decodedBody = utf8.decode(response.bodyBytes);
+    return CategorySpendingResponse.fromJson(json.decode(decodedBody));
+  }
+
+  Future<CategorySpendingResponse> getPastCategorySpending(int periodId) async {
+    final response = await _apiService.get(
+      '/budgets/history/$periodId/summary',
+    );
+
+    // ⭐ TAMBIÉN AQUÍ
+    final decodedBody = utf8.decode(response.bodyBytes);
+    return CategorySpendingResponse.fromJson(json.decode(decodedBody));
   }
 }

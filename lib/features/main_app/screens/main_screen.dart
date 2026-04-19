@@ -1,5 +1,6 @@
 // lib/features/main_app/screens/main_screen.dart
 
+import 'package:FinEdu/common/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,6 +102,80 @@ class _MainScreenState extends State<MainScreen> {
     _analysisKey.currentState?.refreshData();
   }
 
+  void _showTutorialWelcome(BuildContext context, VoidCallback onConfirm) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF9F7EE), // Tu color de fondo beige
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Icon(
+                Icons.auto_awesome,
+                size: 48,
+                color: Color(0xFF13212E),
+              ), // Color primario
+              const SizedBox(height: 20),
+              Text(
+                "¡Tracemos el camino!",
+                style: AppTextStyles.subtitle.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Antes de registrar tu primer gasto, tracemos el camino. Un presupuesto no es una restricción, es un plan para que tu dinero rinda más.\n\nEstablecer tu primer presupuesto es el paso #1 de una educación financiera sólida. ¿Empezamos?",
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context); // Cierra el modal
+                    onConfirm(); // Ejecuta el inicio del tutorial
+                  },
+                  child: const Text(
+                    "¡Empezamos!",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // --- SOLUCIÓN AL ERROR DE BUILDER ---
@@ -122,10 +197,11 @@ class _MainScreenState extends State<MainScreen> {
           // 3. SOLO SI es nuevo Y NO tiene presupuesto, lanzamos el tutorial
           if (!yaVioTutorial && !tienePresupuesto) {
             if (mounted) {
-              ShowCaseWidget.of(
-                context,
-              ).startShowCase([_keyPresupuesto, _keyTransaccion]);
-
+              _showTutorialWelcome(context, () {
+                ShowCaseWidget.of(
+                  context,
+                ).startShowCase([_keyPresupuesto, _keyTransaccion]);
+              });
               // 4. Marcamos como "visto" para que no vuelva a salir nunca más
               await prefs.setBool('tutorial_visto', true);
             }

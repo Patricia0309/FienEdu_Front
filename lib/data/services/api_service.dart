@@ -8,8 +8,8 @@ import '../../common/routing/app_routes.dart';
 class ApiService {
   // Asegúrate de que esta URL sea la correcta para tu teléfono
   static const String _baseUrl =
-      'http://137.184.85.162:8000'; // Usa la IP de tu PC
-  //'http://10.0.2.2:8000';
+      //'http://137.184.85.162:8000'; // Usa la IP de tu PC
+      'http://192.168.1.9:8000';
   final _storage =
       const FlutterSecureStorage(); // Usamos storage directamente aquí
 
@@ -50,29 +50,34 @@ class ApiService {
 
   // --- MANEJO DE ERRORES CENTRALIZADO ---
   void _handleResponse(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      print(
-        'Error en la petición API: ${response.statusCode} ${response.body}',
-      );
-      // Si el error es 401 (No autorizado)...
-      if (response.statusCode == 401) {
-        // Llama a la función para desloguear y redirigir
-        _handleUnauthorized();
-        // Lanza una excepción específica para que la UI sepa que fue un error de auth
-        throw Exception('Sesión expirada. Por favor, inicia sesión de nuevo.');
-      }
-      try {
-        final responseBody = json.decode(response.body);
-        final errorMessage =
-            responseBody['detail'] ?? 'Ocurrió un error en la petición';
-        throw Exception(errorMessage);
-      } catch (e) {
-        // Si el cuerpo no es JSON válido o no tiene 'detail'
-        throw Exception(
-          'Error ${response.statusCode}: ${response.reasonPhrase}',
-        );
-      }
+    // 1. Si todo está bien (200-299), no hacemos nada
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+
+    // 2. Log para consola (el que ya ves)
+    print('DEBUG API: ${response.statusCode} -> ${response.body}');
+
+    // 3. Manejo especial para 401
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+      throw Exception('Sesión expirada. Por favor, inicia sesión de nuevo.');
     }
+
+    // 4. EXTRAER EL MENSAJE SIN QUE EL CATCH NOS TRAMPEE
+    String messageToShow =
+        'Error ${response.statusCode}: ${response.reasonPhrase}';
+
+    try {
+      final body = json.decode(response.body);
+      if (body != null && body['detail'] != null) {
+        messageToShow = body['detail']
+            .toString(); // Aquí vive tu frase de Python
+      }
+    } catch (e) {
+      print('No se pudo parsear el JSON del error: $e');
+    }
+
+    // 5. LANZAMOS LA EXCEPCIÓN FINAL (Fuera de cualquier try-catch interno)
+    throw Exception(messageToShow);
   }
 
   // --- MÉTODOS PÚBLICOS PARA GET, POST, PUT, ETC. ---
@@ -118,6 +123,23 @@ class ApiService {
       body: json.encode(data),
     );
     _handleResponse(response);
+    return response;
+  }
+
+  Future<http.Response> delete(
+    String endpoint, {
+    bool requireAuth = true,
+  }) async {
+    final url = Uri.parse('$_baseUrl$endpoint');
+    // Obtenemos los headers con el token de seguridad
+    final headers = await _getHeaders(includeAuth: requireAuth);
+
+    // Hacemos la petición DELETE
+    final response = await http.delete(url, headers: headers);
+
+    // Usamos tu manejador de respuestas para checar 401 o errores de Python
+    _handleResponse(response);
+
     return response;
   }
 }

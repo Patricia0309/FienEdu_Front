@@ -33,6 +33,7 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
 
   // Variable para saber si estamos editando
   bool get _isEditing => widget.initialBudgetStatus != null;
+  String? _dateErrorMessage;
 
   @override
   void initState() {
@@ -64,12 +65,12 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
   }
 
   Future<void> _handleSaveBudget() async {
-    // Validamos el formulario (monto)
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    // Validación extra: Fecha de fin debe ser igual o posterior a la de inicio
-    // Comparamos solo la fecha (año, mes, día) ignorando la hora
+    setState(() => _dateErrorMessage = null);
+
+    // 1. Validamos el formulario (monto)
+    if (!_formKey.currentState!.validate()) return;
+
+    // 2. Validación local de fechas (Normalización)
     final normalizedStartDate = DateTime(
       _startDate.year,
       _startDate.month,
@@ -82,39 +83,47 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
     );
 
     if (normalizedEndDate.isBefore(normalizedStartDate)) {
-      showErrorSnackBar(
-        context,
-        'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
-      );
+      setState(() {
+        _dateErrorMessage =
+            '⚠️ La fecha de fin no puede ser menor a la de inicio.';
+      });
       return;
     }
 
     setState(() => _isLoading = true);
+
     try {
-      // Llama a 'update' o 'create' según corresponda
-      if (_isEditing) {
+      // 3. DECISIÓN: ¿Editar o Crear?
+      if (_isEditing && widget.initialBudgetStatus != null) {
+        // --- CASO EDITAR (PUT) ---
+        // Usamos el ID que viene en el initialBudgetStatus
         await _budgetService.updateIncomePeriod(
-          periodId:
-              widget.initialBudgetStatus!.incomePeriodId, // Usa el ID existente
+          periodId: widget.initialBudgetStatus!.incomePeriodId,
           amount: double.parse(_amountController.text),
           startDate: _startDate,
           endDate: _endDate,
         );
       } else {
+        // --- CASO CREAR (POST) ---
         await _budgetService.createIncomePeriod(
           amount: double.parse(_amountController.text),
           startDate: _startDate,
           endDate: _endDate,
         );
       }
-      if (mounted)
-        Navigator.pop(context, true); // Devuelve éxito para refrescar Dashboard
+
+      // Si todo sale bien, cerramos y avisamos al Dashboard para refrescar
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted)
-        showErrorSnackBar(
-          context,
-          e.toString().replaceFirst('Exception: ', ''),
-        );
+      if (mounted) {
+        setState(() {
+          // Limpiamos el mensaje que viene de tu FastAPI para mostrarlo en el modal
+          _dateErrorMessage = e
+              .toString()
+              .replaceAll('Exception: ', '')
+              .replaceAll('HttpException: ', '');
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -200,10 +209,12 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
               _buildCalendar(
                 focusedDay: _focusedDayStart,
                 selectedDay: _startDate,
+                hasError: _dateErrorMessage != null,
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
                     _startDate = selectedDay;
-                    _focusedDayStart = focusedDay; // Actualiza el foco también
+                    _focusedDayStart = focusedDay;
+                    _dateErrorMessage = null;
                   });
                 },
               ),
@@ -227,6 +238,20 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
               ),
               const SizedBox(height: 30),
 
+              if (_dateErrorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _dateErrorMessage!,
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
               // Botón Guardar
               PrimaryButton(
                 text: _isLoading
@@ -246,10 +271,14 @@ class _SetBudgetModalState extends State<SetBudgetModal> {
     required DateTime focusedDay,
     required DateTime selectedDay,
     required Function(DateTime, DateTime) onDaySelected,
+    bool hasError = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(
+          color: hasError ? Colors.red.shade700 : Colors.grey.shade300,
+          width: hasError ? 2 : 1,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TableCalendar(

@@ -6,8 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://137.184.85.162:8000';
-  //'http://10.0.2.2:8000';
+  static const String _baseUrl = //'http://137.184.85.162:8000';
+      'http://192.168.1.9:8000';
   final _storage = const FlutterSecureStorage();
 
   Future<void> _saveToken(String token) async {

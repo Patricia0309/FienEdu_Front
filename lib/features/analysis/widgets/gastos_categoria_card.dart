@@ -1,84 +1,229 @@
 // lib/features/analysis/widgets/gastos_categoria_card.dart
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
+import '../../../data/services/analytics_service.dart';
+import '../models/category_spending_model.dart';
+import '../../budgets/models/income_period_history_model.dart';
 
-class GastosCategoriaCard extends StatelessWidget {
-  const GastosCategoriaCard({super.key});
+class GastosCategoriaCard extends StatefulWidget {
+  final List<IncomePeriodHistory> history;
+
+  const GastosCategoriaCard({super.key, required this.history});
+
+  @override
+  State<GastosCategoriaCard> createState() => _GastosCategoriaCardState();
+}
+
+class _GastosCategoriaCardState extends State<GastosCategoriaCard> {
+  final AnalyticsService _analyticsService = AnalyticsService();
+  final PageController _pageController = PageController();
+  final Map<int, CategorySpendingResponse> _cachedReports = {};
+
+  List<IncomePeriodHistory> _sortedHistory = []; // Nueva lista ordenada
+  int _currentIndex = 0;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. Ordenamos el historial del más RECIENTE al más VIEJO
+    _sortedHistory = List.from(widget.history);
+    _sortedHistory.sort((a, b) => b.startDate.compareTo(a.startDate));
+
+    // 2. Cargamos el Presente (Índice 0)
+    _fetchReportForIndex(0);
+  }
+
+  Future<void> _fetchReportForIndex(int index) async {
+    if (_cachedReports.containsKey(index)) return;
+
+    setState(() => _isLoading = true);
+    try {
+      CategorySpendingResponse? report;
+      if (index == 0) {
+        report = await _analyticsService.getActiveCategorySpending();
+      } else {
+        // Ahora usamos nuestra lista ordenada: index 1 es el periodo pasado más cercano
+        final int periodId = _sortedHistory[index - 1].incomePeriodId;
+        report = await _analyticsService.getPastCategorySpending(periodId);
+      }
+
+      if (report != null) {
+        setState(() => _cachedReports[index] = report!);
+      }
+    } catch (e) {
+      print("❌ Error en reporte: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- LÓGICA DE COLORES ---
+  Color _getProgressBarColor(double percentage) {
+    if (percentage >= 1.0) return Colors.red.shade700; // 100% o más: Crítico
+    if (percentage >= 0.70) return Colors.orangeAccent; // 70%: Advertencia
+    if (percentage >= 0.40) return Colors.amber; // 40%: Moderado
+    return AppColors.element; // Menos de 40%: Tu verde/azul
+  }
 
   @override
   Widget build(BuildContext context) {
+    final int totalPages = 1 + _sortedHistory.length;
+
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      height: 380,
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Gastos por categoría', style: AppTextStyles.heading),
-          Text('Últimos 30 días', style: AppTextStyles.small),
-          const SizedBox(height: 20),
-          _buildCategoryRow('Alimentación', 2500, 0.29, AppColors.accent1),
+          _buildHeader(totalPages),
           const SizedBox(height: 16),
-          _buildCategoryRow('Transporte', 1800, 0.21, AppColors.accent2),
-          const SizedBox(height: 16),
-          _buildCategoryRow('Entretenimiento', 1500, 0.18, AppColors.accent2),
-          // Puedes añadir más filas aquí
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: totalPages,
+              onPageChanged: (newIndex) {
+                setState(() => _currentIndex = newIndex);
+                _fetchReportForIndex(newIndex);
+              },
+              itemBuilder: (context, index) {
+                final report = _cachedReports[index];
+
+                if (_isLoading && report == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (report == null || report.categories.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "Sin gastos en este periodo",
+                      style: AppTextStyles.small,
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: report.categories.length,
+                  itemBuilder: (context, catIndex) {
+                    return _buildCategoryRow(report.categories[catIndex]);
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Widget helper para cada fila de categoría
-  Widget _buildCategoryRow(
-    String category,
-    double amount,
-    double percentage,
-    Color barColor,
-  ) {
+  Widget _buildHeader(int totalPages) {
+    String dateRange = "Periodo Actual";
+    if (_currentIndex > 0) {
+      final h = _sortedHistory[_currentIndex - 1];
+      dateRange =
+          "${DateFormat('dd/MM').format(h.startDate)} - ${DateFormat('dd/MM').format(h.endDate)}";
+    }
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(category, style: AppTextStyles.body),
-            Text(
-              '\$${amount.toStringAsFixed(0)}',
-              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: percentage,
-                  minHeight: 10,
-                  backgroundColor: Colors.grey.shade200,
-                  color: barColor,
-                ),
-              ),
+              child: Text('Gastos por categoría', style: AppTextStyles.heading),
             ),
-            const SizedBox(width: 12),
-            Text(
-              '${(percentage * 100).toStringAsFixed(0)}%',
-              style: AppTextStyles.small,
+            // Flecha Izquierda: Va al PASADO (Aumenta el índice)
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(
+                Icons.arrow_back_ios,
+                size: 16,
+                color: _currentIndex < totalPages - 1
+                    ? AppColors.primary
+                    : Colors.grey,
+              ),
+              onPressed: _currentIndex < totalPages - 1
+                  ? () => _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            // Flecha Derecha: Viene al PRESENTE (Baja el índice)
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: _currentIndex > 0 ? AppColors.primary : Colors.grey,
+              ),
+              onPressed: _currentIndex > 0
+                  ? () => _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    )
+                  : null,
             ),
           ],
         ),
+        const SizedBox(height: 4),
+        Text(
+          dateRange,
+          style: AppTextStyles.small.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildCategoryRow(CategorySpendingItem cat) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(cat.categoryName, style: AppTextStyles.body),
+              Text(
+                '\$${cat.amount.toStringAsFixed(0)}',
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20), // ¡Bordes bien redondos!
+            child: LinearProgressIndicator(
+              value: cat.percentage.clamp(
+                0.0,
+                1.0,
+              ), // Evita que la barra truene si se pasan del 100%
+              backgroundColor: Colors.grey.shade100,
+              color: _getProgressBarColor(cat.percentage),
+              minHeight: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

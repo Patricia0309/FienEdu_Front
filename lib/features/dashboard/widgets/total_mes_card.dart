@@ -5,18 +5,29 @@ import 'package:fl_chart/fl_chart.dart';
 import 'dart:math'; // Para min y max
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
-// Ya no necesita BudgetStatus, solo los números
+import 'package:intl/intl.dart';
 
 class TotalMesCard extends StatelessWidget {
   // 1. Vuelve a recibir números simples
   final double presupuestoTotal;
   final double totalGastos;
+  final DateTime? fechaInicio;
+  final DateTime? fechaFin;
+  final int daysLeft;
 
   const TotalMesCard({
     super.key,
     required this.presupuestoTotal,
     required this.totalGastos,
+    this.fechaInicio,
+    this.fechaFin,
+    required this.daysLeft,
   });
+
+  String formatearFecha(DateTime fecha) {
+    // Esto lo deja como "12 abr"
+    return DateFormat('d MMM', 'es_MX').format(fecha);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +67,28 @@ class TotalMesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Resumen del presupuesto', style: AppTextStyles.heading),
+          if (presupuestoTotal > 0 &&
+              fechaInicio != null &&
+              fechaFin != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${formatearFecha(fechaInicio!)} - ${formatearFecha(fechaFin!)}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
           _buildSummaryRow(
             icon: Icons.account_balance_wallet_outlined,
@@ -151,12 +184,24 @@ class TotalMesCard extends StatelessWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40.0),
-                child: Text(
-                  'Establece un presupuesto para ver tu progreso aquí.',
-                  style: AppTextStyles.body.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '¡Ups! No tienes un presupuesto activo para hoy.',
+                      style: AppTextStyles.body.copyWith(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
             ),

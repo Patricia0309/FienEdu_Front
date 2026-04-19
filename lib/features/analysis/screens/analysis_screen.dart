@@ -12,7 +12,7 @@ import '../../inicial_setup/models/category_model.dart';
 import '../../profile/models/student_model.dart';
 import '../../transactions/models/transaction_model.dart';
 import '../../budgets/models/income_period_model.dart';
-import '../models/income_period_history_model.dart';
+import '../../budgets/models/income_period_history_model.dart';
 import '../models/apriori_rule_model.dart';
 import '../models/profile_response_model.dart';
 import '../models/budget_tendency_model.dart';
@@ -21,6 +21,7 @@ import '../../dashboard/widgets/perfil_financiero_card.dart';
 import '../widgets/budget_history_row.dart';
 import '../widgets/tendencia_card.dart';
 import '../widgets/rules_card.dart';
+import '../widgets/gastos_categoria_card.dart';
 //provider
 import '../providers/tendency_provider.dart';
 
@@ -40,6 +41,7 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       CategoryService(); // <-- Asegúrate de tener esta línea
 
   late Future<Map<String, dynamic>> _dataFuture;
+  List<IncomePeriodHistory> _historyData = [];
 
   @override
   void initState() {
@@ -90,6 +92,8 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       ), // <-- 6. Carga todas las categorías
     ]);
 
+    _historyData = results[5] as List<IncomePeriodHistory>;
+
     // Creamos el mapa de categorías aquí
     final categories = results[6] as List<Category>;
     final categoryMap = {
@@ -102,7 +106,7 @@ class AnalysisScreenState extends State<AnalysisScreen> {
       'tendency': results[2],
       'student': results[3],
       'transactions': results[4],
-      'budgetHistory': results[5],
+      'budgetHistory': _historyData,
       'categoryMap': categoryMap, // <-- 7. ¡AHORA SÍ SE DEVUELVE EL MAPA!
     };
   }
@@ -217,15 +221,8 @@ class AnalysisScreenState extends State<AnalysisScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Tarjeta 2: Historial de Presupuesto
-                          _buildBudgetHistoryCard(budgetHistory),
-                          const SizedBox(height: 16),
-
                           // Tarjeta 3: Gastos por Categoría (Cambié el nombre de la función)
-                          _buildGastosPorCategoriaCard(
-                            transactions,
-                            categoryMap,
-                          ),
+                          GastosCategoriaCard(history: _historyData),
                           const SizedBox(height: 16),
 
                           // Tarjeta 4: Tendencia de Gasto
@@ -288,146 +285,6 @@ class AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  // Tarjeta 2: Historial Presupuesto
-  Widget _buildBudgetHistoryCard(List<IncomePeriodHistory> history) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Historial de presupuestos', style: AppTextStyles.heading),
-          const SizedBox(height: 12), // <-- Reducido el espacio
-
-          if (history.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Text(
-                  'Aún no tienes historial de presupuestos.',
-                  style: AppTextStyles.body.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-            )
-          else
-            ListView.builder(
-              itemCount: history.length,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return BudgetHistoryRow(
-                  budget: history[index],
-                ); // Usa el widget que ya creamos
-              },
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Tarjeta 3: Gastos por Categoría (Tu lógica original está bien)
-  Widget _buildGastosPorCategoriaCard(
-    List<Transaction> transactions,
-    Map<int, Category> categoryMap,
-  ) {
-    final List<Transaction> gastos = transactions
-        .where((t) => t.type == TransactionType.gasto)
-        .toList();
-    final double totalGastos = gastos.fold(0.0, (sum, t) => sum + t.amount);
-    final Map<int, double> gastosPorCategoriaId = {};
-    for (var gasto in gastos) {
-      gastosPorCategoriaId.update(
-        gasto.categoryId,
-        (valorExistente) => valorExistente + gasto.amount,
-        ifAbsent: () => gasto.amount,
-      );
-    }
-    final sortedGastos = gastosPorCategoriaId.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Gastos por categoría', style: AppTextStyles.heading),
-          Text('Últimos 30 días', style: AppTextStyles.small),
-          const SizedBox(height: 2),
-
-          if (gastos.isEmpty)
-            Center(
-              child: Text(
-                'Aún no tienes gastos registrados.',
-                style: AppTextStyles.body,
-              ),
-            )
-          else
-            ListView.builder(
-              itemCount: sortedGastos.length,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final entry = sortedGastos[index];
-                final category =
-                    categoryMap[entry.key] ??
-                    Category(id: 0, title: 'Desconocida', icon: '❓');
-                final double montoCategoria = entry.value;
-                final double porcentaje = totalGastos > 0
-                    ? (montoCategoria / totalGastos)
-                    : 0.0;
-
-                return _buildCategoryRow(
-                  categoryName: category.title,
-                  amount: montoCategoria,
-                  percentage: porcentaje,
-                );
-              },
-            ),
-
-          const Divider(height: 24, thickness: 1),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total de Gastos',
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '\$${totalGastos.toStringAsFixed(0)}',
-                style: AppTextStyles.heading.copyWith(color: AppColors.primary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   // Tarjeta 4: Tendencia
   Widget _buildTendencyCard(BudgetTendency tendency) {
     return TendenciaCard(tendencyData: tendency);
@@ -449,53 +306,6 @@ class AnalysisScreenState extends State<AnalysisScreen> {
         ),
         Expanded(child: Text(text, style: AppTextStyles.body)),
       ],
-    );
-  }
-
-  // Helper para la Tarjeta 3
-  Widget _buildCategoryRow({
-    required String categoryName,
-    required double amount,
-    required double percentage,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(categoryName, style: AppTextStyles.body),
-              Text(
-                '\$${amount.toStringAsFixed(0)}',
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: percentage, // El valor debe ser de 0.0 a 1.0
-                    minHeight: 8,
-                    backgroundColor: Colors.grey.shade200,
-                    color: AppColors.element, // El color verde oscuro
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${(percentage * 100).toStringAsFixed(0)}%',
-                style: AppTextStyles.small.copyWith(color: AppColors.secondary),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

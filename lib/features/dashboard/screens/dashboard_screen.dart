@@ -11,6 +11,8 @@ import '../../../data/services/budget_service.dart';
 import '../../../features/profile/models/student_model.dart';
 import '../../../features/transactions/models/transaction_model.dart';
 import '../../../features/budgets/models/budget_status_model.dart';
+import '../../budgets/models/income_period_history_model.dart';
+import '../../../features/budgets/screens/budget_history_screen.dart';
 import '../widgets/dashboard_actions_grid.dart';
 import '../widgets/perfil_financiero_card.dart';
 import '../widgets/total_mes_card.dart';
@@ -42,6 +44,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   // State Variables
   Student? _studentData;
   List<Transaction> _transactionsData = [];
+  List<IncomePeriodHistory> _historyData = [];
   BudgetStatus? _budgetStatusData;
   BudgetStatus? get currentBudgetStatus => _budgetStatusData;
   ProfileResponse? _profileData;
@@ -71,7 +74,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         _userService.getMe(),
         _transactionService.getTransactions(),
         _budgetService.getBudgetStatus(),
-
+        _budgetService.getBudgetHistory(),
         _analyticsService.getProfile().catchError((e) {
           print("Error cargando perfil en Dashboard: $e");
           return null; // Devuelve null si falla
@@ -88,8 +91,9 @@ class DashboardScreenState extends State<DashboardScreen> {
           _studentData = results[0] as Student;
           _transactionsData = results[1] as List<Transaction>;
           _budgetStatusData = results[2] as BudgetStatus?;
-          _profileData = results[3] as ProfileResponse?;
-          _recommendationsData = results[4] as List<Recommendation>?;
+          _historyData = results[3] as List<IncomePeriodHistory>;
+          _profileData = results[4] as ProfileResponse?;
+          _recommendationsData = results[5] as List<Recommendation>?;
           _isLoading = false;
         });
       }
@@ -229,12 +233,19 @@ class DashboardScreenState extends State<DashboardScreen> {
     double presupuestoCalculado = 0.0;
     double gastosCalculados = 0.0;
 
+    int diasCalculados = 0;
+    DateTime hoy = DateTime.now();
+
     if (budgetStatus != null) {
       presupuestoCalculado = budgetStatus.totalIncome;
+      diasCalculados = budgetStatus.endDate.difference(hoy).inDays;
 
       // Usamos las fechas del presupuesto tal como vienen (asumimos que son UTC)
       final DateTime budgetStart = budgetStatus.startDate;
       final DateTime budgetEnd = budgetStatus.endDate;
+      diasCalculados = budgetEnd.difference(hoy).inDays;
+
+      if (diasCalculados < 0) diasCalculados = 0;
 
       print("DEBUG DASHBOARD: Rango de presupuesto: $budgetStart a $budgetEnd");
 
@@ -277,6 +288,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                 TotalMesCard(
                   presupuestoTotal: presupuestoCalculado,
                   totalGastos: gastosCalculados,
+                  fechaInicio: budgetStatus?.startDate,
+                  fechaFin: budgetStatus?.endDate,
+                  daysLeft: diasCalculados,
                 ),
                 const SizedBox(height: 16),
                 Showcase(
@@ -291,6 +305,22 @@ class DashboardScreenState extends State<DashboardScreen> {
                   child: BudgetCard(
                     budgetStatus: budgetStatus,
                     onSetBudgetTap: () => _showSetBudgetModal(budgetStatus),
+                    onSelectBudgetTap: () async {
+                      // Navegamos a la nueva página y esperamos a que nos regrese un presupuesto seleccionado
+                      final selectedHistory =
+                          await Navigator.push<IncomePeriodHistory>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BudgetHistoryScreen(),
+                            ),
+                          );
+
+                      // Si el usuario seleccionó uno, abrimos el modal de "Set Budget" con esos datos
+                      if (selectedHistory != null && mounted) {
+                        _showSetBudgetModalFromHistory(selectedHistory);
+                      }
+                    },
+                    hasHistory: _historyData.isNotEmpty,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -349,5 +379,34 @@ class DashboardScreenState extends State<DashboardScreen> {
       ],
       titleSpacing: 0,
     );
+  }
+
+  void _showSetBudgetModalFromHistory(IncomePeriodHistory history) async {
+    // Convertimos el historial a un objeto BudgetStatus "temporal"
+    // para que tu SetBudgetModal lo pueda leer y pre-llenar los campos.
+    final tempStatus = BudgetStatus(
+      incomePeriodId: history.incomePeriodId,
+      totalIncome: history.totalIncome,
+      // Ponemos fechas sugeridas (hoy y en un mes) para que el usuario las ajuste
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 30)),
+      totalSpent: 0,
+      remainingBudget: history.totalIncome,
+      isActive: false,
+      daysLeft: 30,
+    );
+
+    // Abrimos el modal que ya tienes, pero pasándole este estado "clonado"
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SetBudgetModal(initialBudgetStatus: tempStatus),
+    );
+
+    // Si el usuario le dio a "Guardar" en el modal, refrescamos el Dashboard
+    if (saved == true && mounted) {
+      refreshData();
+    }
   }
 }

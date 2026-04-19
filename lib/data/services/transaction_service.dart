@@ -26,7 +26,7 @@ class TransactionService {
 
     // Añadimos los campos opcionales si existen
     if (date != null) {
-      data['date'] = date.toIso8601String();
+      data['ts'] = date.toUtc().toIso8601String();
     }
     if (note != null && note.isNotEmpty) {
       data['note'] = note;

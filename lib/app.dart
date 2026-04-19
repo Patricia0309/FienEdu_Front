@@ -9,6 +9,7 @@ import 'features/auth/screens/profile_setup_screen.dart';
 import 'features/inicial_setup/screens/initial_setup_screen.dart';
 import 'features/main_app/screens/main_screen.dart';
 import 'common/routing/navigator_key.dart';
+import 'common/routing/navigator_key.dart';
 
 class MyApp extends StatelessWidget {
   final bool isFirstTime;

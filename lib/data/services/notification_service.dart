@@ -1,129 +1,140 @@
-// lib/data/services/notification_service.dart
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'api_service.dart'; // To send the token to the backend
-import '../../common/routing/navigator_key.dart'; // For navigation on tap
-import '../../common/routing/app_routes.dart';   // For navigation routes
-import 'package:flutter/material.dart';         // For showing alerts         
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'api_service.dart';
+import '../../common/routing/navigator_key.dart';
+import '../../common/routing/app_routes.dart';
 
-// Optional: Background message handler (must be a top-level function)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, initialize Firebase first.
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // Not always needed for just FCM
-  print("Handling a background message: ${message.messageId}");
-  // You can perform background tasks here based on the message data
+  print("📩 Background message: ${message.messageId}");
 }
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final ApiService _apiService = ApiService();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
+  /// 🔹 Inicialización general
   Future<void> initialize() async {
-    print("Initializing Notification Service...");
-    // Request permission (iOS & Android 13+)
+    print("🔔 Inicializando servicio de notificaciones...");
+
+    // Pedir permisos
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
-      provisional: false, // Set to true if you want silent notifications initially
     );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('Notification permission granted.');
+    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
+      await _initLocalNotifications();
       await _setupToken();
-      _setupForegroundMessageHandler();
-      _setupBackgroundMessageHandler();
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-      print('Notification permission granted provisionally.');
-      await _setupToken();
-      _setupForegroundMessageHandler();
-      _setupBackgroundMessageHandler();
-    } else {
-      print('User declined or has not accepted notification permission.');
+
+      _setupForegroundHandler();
+      _setupInteractionHandler();
+      _setupBackgroundHandler();
     }
   }
 
+  /// 🔹 Inicializar notificaciones locales (solo para mostrar en foreground)
+  Future<void> _initLocalNotifications() async {
+    const androidSettings = AndroidInitializationSettings('ic_notification');
+
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: DarwinInitializationSettings(),
+    );
+
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (details) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.dashboard,
+          (route) => false,
+        );
+      },
+    );
+  }
+
+  /// 🔹 Obtener y enviar token al backend
   Future<void> _setupToken() async {
     try {
-      String? fcmToken = await _firebaseMessaging.getToken();
-      if (fcmToken != null) {
-        print("Firebase Messaging Token: $fcmToken");
-        await _sendTokenToBackend(fcmToken);
-        // Listen for token changes
-        _firebaseMessaging.onTokenRefresh.listen(_sendTokenToBackend);
-      } else {
-        print("Failed to get FCM token.");
+      String? token = await _firebaseMessaging.getToken();
+
+      if (token != null) {
+        print("🔥 TOKEN FCM: $token");
+
+        final prefs = await SharedPreferences.getInstance();
+        final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+        if (isLoggedIn) {
+          await _sendTokenToBackend(token);
+        }
+
+        // Escuchar refresh del token
+        _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+          final currentPrefs = await SharedPreferences.getInstance();
+          if (currentPrefs.getBool('isLoggedIn') ?? false) {
+            await _sendTokenToBackend(newToken);
+          }
+        });
       }
     } catch (e) {
-      print("Error getting/setting up FCM token: $e");
+      print("❌ Error obteniendo token: $e");
     }
   }
 
   Future<void> _sendTokenToBackend(String token) async {
     try {
-      print("Sending FCM token to backend...");
-      // Make sure this endpoint exists in your backend (e.g., in students.py)
       await _apiService.put('/students/me/fcm-token', {'fcm_token': token});
-      print("FCM token sent successfully.");
+      print("✅ Token enviado al backend");
     } catch (e) {
-      print("Error sending FCM token to backend: $e");
-      // Handle error, maybe retry later?
+      print("❌ Error enviando token: $e");
     }
   }
 
-  void _setupForegroundMessageHandler() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Foreground Message received!');
-      print('Message data: ${message.data}');
+  /// 🔹 Notificación cuando la app está ABIERTA
+  void _setupForegroundHandler() {
+    FirebaseMessaging.onMessage.listen((message) {
+      print("📲 Notificación en foreground");
 
-      if (message.notification != null) {
-        print('Message notification: ${message.notification!.title} / ${message.notification!.body}');
-        // Show a simple alert dialog when the app is open
-        // You might want a more sophisticated in-app notification UI
-        final context = navigatorKey.currentState?.overlay?.context;
-        if (context != null) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text(message.notification!.title ?? "Notification"),
-              content: Text(message.notification!.body ?? ""),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
+      final notification = message.notification;
+
+      if (notification != null) {
+        _localNotifications.show(
+          0,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'default_channel',
+              'General',
+              importance: Importance.max,
+              priority: Priority.high,
             ),
-          );
-        }
+          ),
+        );
       }
     });
   }
 
-  void _setupBackgroundMessageHandler() {
-    // Handles notification tap when app is in background (but not terminated)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Notification tapped (app in background)!');
-      print('Message data: ${message.data}');
-      // Example: Navigate to a specific screen based on data
-      // final screen = message.data['screen'];
-      // if (screen == 'transactions' && navigatorKey.currentState != null) {
-      //   navigatorKey.currentState!.pushNamed(AppRoutes.transactions); // Define this route
-      // }
-    });
+  /// 🔹 Cuando el usuario toca la notificación
+  void _setupInteractionHandler() {
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print("👉 App abierta desde notificación");
 
-    // Handles notification tap when app is terminated
-    // This requires getting the initial message when the app starts
-    _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        print('Notification tapped (app terminated)!');
-        print('Initial message data: ${message.data}');
-        // Handle initial navigation based on message data here
-      }
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        AppRoutes.dashboard,
+        (route) => false,
+      );
     });
+  }
 
-    // Set the background handler (for data-only messages when app is terminated/background)
+  /// 🔹 Notificaciones en segundo plano
+  void _setupBackgroundHandler() {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 }

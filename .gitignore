@@ -46,3 +46,16 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Android secrets
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+android/app/google-services.json
+
+# iOS secrets
+ios/Runner/GoogleService-Info.plist
+
+# API Keys y Variables de Entorno
+.env
+.env.*
