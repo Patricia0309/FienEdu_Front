@@ -38,10 +38,27 @@ void main() async {
   Intl.defaultLocale = 'es_ES';
 
   // --- LOG DE SEGURIDAD (Para que veas el token en consola sin bloquear) ---
+  /*
   FirebaseMessaging.instance.getToken().then((token) {
     print("-------------------------------------------------");
     print("PATY, ESTE ES TU TOKEN: $token");
     print("-------------------------------------------------");
+  });
+  */
+  Future.delayed(Duration.zero, () async {
+    // Inicializa el servicio de fondo
+    notificationService.initialize().catchError(
+      (e) => print("Error en FCM: $e"),
+    );
+
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      print("-------------------------------------------------");
+      print("PATY, ESTE ES TU TOKEN EN LA OFICINA: $token");
+      print("-------------------------------------------------");
+    } catch (e) {
+      print("⚠️ No se pudo imprimir el token por bloqueos de red: $e");
+    }
   });
 
   // 7. Arrancar la aplicación

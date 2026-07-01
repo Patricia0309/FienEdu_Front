@@ -116,6 +116,10 @@ class _GastosCategoriaCardState extends State<GastosCategoriaCard> {
                 }
 
                 return ListView.builder(
+                  physics:
+                      const NeverScrollableScrollPhysics(), // <-- 1. Libera el scroll vertical para que la pantalla no se atore
+                  shrinkWrap:
+                      true, // <-- 2. Hace que use solo el espacio necesario
                   itemCount: report.categories.length,
                   itemBuilder: (context, catIndex) {
                     return _buildCategoryRow(report.categories[catIndex]);
@@ -195,6 +199,9 @@ class _GastosCategoriaCardState extends State<GastosCategoriaCard> {
   }
 
   Widget _buildCategoryRow(CategorySpendingItem cat) {
+    final double normalizedPercentage = cat.percentage > 1.0
+        ? cat.percentage / 100
+        : cat.percentage;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -213,12 +220,12 @@ class _GastosCategoriaCardState extends State<GastosCategoriaCard> {
           ClipRRect(
             borderRadius: BorderRadius.circular(20), // ¡Bordes bien redondos!
             child: LinearProgressIndicator(
-              value: cat.percentage.clamp(
+              value: normalizedPercentage.clamp(
                 0.0,
                 1.0,
               ), // Evita que la barra truene si se pasan del 100%
               backgroundColor: Colors.grey.shade100,
-              color: _getProgressBarColor(cat.percentage),
+              color: _getProgressBarColor(normalizedPercentage),
               minHeight: 10,
             ),
           ),

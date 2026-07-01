@@ -8,7 +8,6 @@ import '../../../common/theme/app_text_styles.dart';
 import 'package:intl/intl.dart';
 
 class TotalMesCard extends StatelessWidget {
-  // 1. Vuelve a recibir números simples
   final double presupuestoTotal;
   final double totalGastos;
   final DateTime? fechaInicio;
@@ -25,29 +24,43 @@ class TotalMesCard extends StatelessWidget {
   });
 
   String formatearFecha(DateTime fecha) {
-    // Esto lo deja como "12 abr"
     return DateFormat('d MMM', 'es_MX').format(fecha);
+  }
+
+  // --- LÓGICA DE COLORES UNIFICADA ---
+  Color _getDynamicColor(double percentage) {
+    if (percentage >= 0.95)
+      return Colors.red.shade700; // 100% o más: Crítico (Gasto excedido)
+    if (percentage >= 0.70)
+      return Colors.orangeAccent; // 70% - 99%: Advertencia
+    if (percentage >= 0.40) return Colors.amber; // 40% - 69%: Moderado
+    return AppColors.element; // Menos de 40%: Saludable (Verde/Azul base)
   }
 
   @override
   Widget build(BuildContext context) {
-    // 2. Toda la lógica de cálculo ahora vive aquí
     final double gastos = totalGastos;
     final double presupuesto = presupuestoTotal;
 
     final double gastosDentroDelPresupuesto = min(gastos, presupuesto);
     final double gastoExtra = max(0, gastos - presupuesto);
     final double restante = max(0, presupuesto - gastos);
-    // clamp(0.0, 1.0) asegura que el porcentaje nunca sea < 0 o > 1
+
+    // Calculamos el porcentaje real (puede ser mayor a 1.0 si hay gasto extra)
     final double porcentajeGasto = presupuesto > 0
-        ? (gastos / presupuesto).clamp(0.0, 1.0)
+        ? (gastos / presupuesto)
         : 0.0;
-    final double chartValue = porcentajeGasto * 100;
+
+    // El valor para la dona se limita a un máximo de 100 por el PieChart
+    final double chartValue = (porcentajeGasto * 100).clamp(0.0, 100.0);
+
+    // Obtenemos el color dinámico basado en la situación real del mes
+    final Color estadoColor = _getDynamicColor(porcentajeGasto);
 
     final bool showChart = presupuesto > 0;
 
     print(
-      "DEBUG WIDGET: TotalMesCard CONSTRUIDO con gastos: $gastos, presupuesto: $presupuesto, extra: $gastoExtra",
+      "DEBUG WIDGET: TotalMesCard CONSTRUIDO con gastos: $gastos, presupuesto: $presupuesto, extra: $gastoExtra, %: $porcentajeGasto",
     );
 
     return Container(
@@ -132,9 +145,11 @@ class TotalMesCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${chartValue.toStringAsFixed(0)}%', // Se limita a 100 visualmente por la lógica del PieChart
+                        '${(porcentajeGasto * 100).toStringAsFixed(0)}%', // Muestra el porcentaje real (ej: 115%)
                         style: AppTextStyles.title.copyWith(
-                          color: AppColors.primary,
+                          color:
+                              estadoColor, // <-- Modificado: El texto central cambia de color
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text('Gastado', style: AppTextStyles.small),
@@ -146,19 +161,20 @@ class TotalMesCard extends StatelessWidget {
                       sectionsSpace: 4,
                       centerSpaceRadius: 55,
                       sections: [
+                        // Sección de lo Gastado
                         PieChartSectionData(
-                          value:
-                              chartValue, // El valor visual se basa en el porcentaje
-                          color: AppColors.element,
+                          value: chartValue,
+                          color:
+                              estadoColor, // <-- Modificado: Color dinámico para la dona
                           radius: 15,
                           showTitle: false,
                         ),
+                        // Sección de lo Restante
                         PieChartSectionData(
-                          value: (100 - chartValue).clamp(
-                            0,
-                            100,
-                          ), // Lo que queda
-                          color: AppColors.element.withOpacity(0.2),
+                          value: (100 - chartValue).clamp(0, 100),
+                          color: estadoColor.withOpacity(
+                            0.15,
+                          ), // <-- Modificado: Fondo sutil a juego con el estado
                           radius: 15,
                           showTitle: false,
                         ),
@@ -172,10 +188,15 @@ class TotalMesCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(AppColors.element, 'Gastado'),
+                _buildLegendItem(
+                  estadoColor,
+                  'Gastado',
+                ), // <-- Modificado: Leyenda dinámica
                 const SizedBox(width: 24),
                 _buildLegendItem(
-                  AppColors.element.withOpacity(0.2),
+                  estadoColor.withOpacity(
+                    0.2,
+                  ), // <-- Modificado: Leyenda dinámica
                   'Restante',
                 ),
               ],

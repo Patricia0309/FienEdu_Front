@@ -46,4 +46,47 @@ class TransactionService {
         .map((json) => Transaction.fromJson(json))
         .toList();
   }
+
+  // 1. GET para obtener una sola transacción fresca del backend
+  Future<Transaction> getTransactionById(int transactionId) async {
+    try {
+      // Hace la petición al endpoint: GET /transactions/{id}
+      final response = await _apiService.get('/transactions/$transactionId');
+      final responseData = json.decode(response.body);
+      return Transaction.fromJson(responseData);
+    } catch (e) {
+      print('Error en getTransactionById: $e');
+      throw Exception('No se pudieron cargar los detalles de la transacción.');
+    }
+  }
+
+  // 2. PUT para actualizar la transacción
+  Future<void> updateTransaction({
+    required int transactionId,
+    required double amount,
+    required TransactionType type,
+    required int? categoryId,
+    required DateTime date,
+    required String note,
+  }) async {
+    try {
+      // Mapeamos los datos exactamente al esquema 'TransactionUpdate' del backend
+      // Nota: El backend en Python usa 'ts' para la fecha según tus logs anteriores
+      final Map<String, dynamic> data = {
+        'amount': amount,
+        'type': type == TransactionType.gasto ? 'gasto' : 'ingreso',
+        'category_id': categoryId,
+        'ts': date.toIso8601String(), // Validamos la fecha
+        'description': note,
+      };
+
+      // Hace la petición: PUT /transactions/{id}
+      await _apiService.put('/transactions/$transactionId', data);
+      print('🔄 Transacción $transactionId editada con éxito en el servidor.');
+    } catch (e) {
+      print('Error en updateTransaction: $e');
+      // Captura el error 404 del periodo si la fecha no coincide
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
 }

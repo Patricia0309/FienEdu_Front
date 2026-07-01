@@ -1,5 +1,3 @@
-// lib/features/transactions/widgets/new_transaction_modal.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../common/theme/app_text_styles.dart';
@@ -7,15 +5,22 @@ import '../../../common/widgets/primary_button.dart';
 import '../../../common/widgets/custom_input_field.dart';
 import '../../../data/services/category_service.dart';
 import '../../../data/services/transaction_service.dart';
-import '../../../data/services/user_service.dart'; // Importa UserService
+import '../../../data/services/user_service.dart';
 import '../../../features/inicial_setup/models/category_model.dart';
-import '../../../features/profile/models/student_model.dart'; // Importa Student
+import '../../../features/profile/models/student_model.dart';
 import '../../../features/transactions/models/transaction_model.dart';
 import '../../../common/utils/show_snackbar.dart';
 
 class NewTransactionModal extends StatefulWidget {
   final int incomePeriodId;
-  const NewTransactionModal({super.key, required this.incomePeriodId});
+  final int?
+  transactionIdToEdit; // <-- Pasado correctamente dentro de las propiedades del Widget
+
+  const NewTransactionModal({
+    super.key,
+    required this.incomePeriodId,
+    this.transactionIdToEdit,
+  });
 
   @override
   State<NewTransactionModal> createState() => _NewTransactionModalState();
@@ -25,7 +30,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
   final _formKey = GlobalKey<FormState>();
   final TransactionService _transactionService = TransactionService();
   final CategoryService _categoryService = CategoryService();
-  final UserService _userService = UserService(); // Instancia UserService
+  final UserService _userService = UserService();
 
   // State variables
   String _selectedType = 'gasto';
@@ -34,20 +39,50 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   bool _isLoading = false;
-  // Future para cargar datos del usuario y TODAS las categorías
+
+  bool get _isEditing => widget.transactionIdToEdit != null;
   late Future<Map<String, dynamic>> _dataFuture;
 
   @override
   void initState() {
     super.initState();
-    // Pedimos ambos datos al iniciar
     _dataFuture = _fetchData();
+    _initData(); // <-- Llama la inicialización asíncrona para el modo edición
+  }
+
+  void _initData() async {
+    if (_isEditing) {
+      setState(() => _isLoading = true);
+      try {
+        // Consumimos tu nuevo endpoint: GET /{transaction_id}
+        final tx = await _transactionService.getTransactionById(
+          widget.transactionIdToEdit!,
+        );
+
+        setState(() {
+          _selectedType = tx.type == TransactionType.gasto
+              ? 'gasto'
+              : 'ingreso';
+          _selectedDate = tx.date;
+          _amountController.text = tx.amount.toStringAsFixed(0);
+          _noteController.text = tx.description;
+          _selectedCategoryId = tx.categoryId;
+        });
+      } catch (e) {
+        showErrorSnackBar(
+          context,
+          'No se pudieron cargar los datos de la transacción.',
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<Map<String, dynamic>> _fetchData() async {
     final results = await Future.wait([
-      _userService.getMe(), // Obtiene datos del usuario (incluyendo favoritas)
-      _categoryService.getCategories(), // Obtiene TODAS las categorías
+      _userService.getMe(),
+      _categoryService.getCategories(),
     ]);
     return {
       'student': results[0] as Student,
@@ -59,17 +94,31 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _transactionService.createTransaction(
-          amount: double.parse(_amountController.text),
-          type: _selectedType == 'gasto'
-              ? TransactionType.gasto
-              : TransactionType.ingreso,
-          // Si es un ingreso, tu API debería manejar un ID nulo o especial. Enviamos 1 por ahora.
-          categoryId: _selectedType == 'gasto' ? _selectedCategoryId : null,
-          date: _selectedDate,
-          note: _noteController.text,
-          incomePeriodId: widget.incomePeriodId,
-        );
+        if (_isEditing) {
+          // <-- Manda a llamar tu endpoint PUT /{transaction_id}
+          await _transactionService.updateTransaction(
+            transactionId: widget.transactionIdToEdit!,
+            amount: double.parse(_amountController.text),
+            type: _selectedType == 'gasto'
+                ? TransactionType.gasto
+                : TransactionType.ingreso,
+            categoryId: _selectedType == 'gasto' ? _selectedCategoryId : null,
+            date: _selectedDate,
+            note: _noteController.text,
+          );
+        } else {
+          // Endpoint original POST
+          await _transactionService.createTransaction(
+            amount: double.parse(_amountController.text),
+            type: _selectedType == 'gasto'
+                ? TransactionType.gasto
+                : TransactionType.ingreso,
+            categoryId: _selectedType == 'gasto' ? _selectedCategoryId : null,
+            date: _selectedDate,
+            note: _noteController.text,
+            incomePeriodId: widget.incomePeriodId,
+          );
+        }
         if (mounted) Navigator.pop(context, true);
       } catch (e) {
         if (mounted) {
@@ -78,11 +127,9 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
             SnackBar(
               content: Text(cleanMessage),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating, // Esto lo hace flotar
+              behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.only(
-                bottom:
-                    MediaQuery.of(context).size.height *
-                    0.4, // Lo sube un poco para que se vea
+                bottom: MediaQuery.of(context).size.height * 0.4,
                 left: 20,
                 right: 20,
               ),
@@ -138,7 +185,9 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
               children: [
                 Center(
                   child: Text(
-                    'Nueva Transacción',
+                    _isEditing
+                        ? 'Editar Transacción'
+                        : 'Nueva Transacción', // <-- Título mutado
                     style: AppTextStyles.heading,
                   ),
                 ),
@@ -165,14 +214,11 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                           onPressed: (index) {
                             setState(() {
                               _selectedType = index == 0 ? 'gasto' : 'ingreso';
-                              // Limpiamos nota o categoría según el cambio
                               if (_selectedType == 'gasto') {
                                 _noteController.clear();
-                                _selectedCategoryId =
-                                    null; // Resetea la categoría si cambiamos a Gasto
+                                _selectedCategoryId = null;
                               } else {
-                                _selectedCategoryId =
-                                    null; // También resetea si cambiamos a Ingreso
+                                _selectedCategoryId = null;
                               }
                             });
                           },
@@ -190,7 +236,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                         ),
                         const SizedBox(height: 20),
 
-                        // --- Categoría (solo Gasto y usa favoritas) ---
+                        // --- Categoría ---
                         if (_selectedType == 'gasto') ...[
                           Text(
                             'Categoría',
@@ -271,7 +317,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                           const SizedBox(height: 20),
                         ],
 
-                        // --- Nota (solo Ingreso) ---
+                        // --- Nota ---
                         if (_selectedType == 'ingreso') ...[
                           Text(
                             'Nota',
@@ -334,7 +380,7 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20), // Espacio final del scroll
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -353,7 +399,11 @@ class _NewTransactionModalState extends State<NewTransactionModal> {
                     Expanded(
                       child: PrimaryButton(
                         onPressed: _isLoading ? null : _handleSave,
-                        text: _isLoading ? 'Guardando...' : 'Guardar',
+                        text: _isLoading
+                            ? 'Guardando...'
+                            : (_isEditing
+                                  ? 'Editar'
+                                  : 'Guardar'), // <-- El botón cambia dinámicamente de texto
                       ),
                     ),
                   ],

@@ -3,18 +3,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../common/theme/app_text_styles.dart';
-import '../../inicial_setup/models/category_model.dart'; // Importamos el modelo de Categoría
+import '../../inicial_setup/models/category_model.dart';
 import '../models/transaction_model.dart';
 
 class TransactionListItem extends StatelessWidget {
   final Transaction transaction;
-  final Category
-  category; // <-- 1. Ahora también recibe el objeto Category completo
+  final Category category;
+  final Function(int) onEdit; // <-- Cambiado para pasar el ID de la transacción
+  final VoidCallback onDelete; // <-- Para manejar la eliminación
 
   const TransactionListItem({
     super.key,
     required this.transaction,
     required this.category,
+    required this.onEdit, // <-- Obligatorio
+    required this.onDelete, // <-- Obligatorio
   });
 
   @override
@@ -28,24 +31,19 @@ class TransactionListItem extends StatelessWidget {
 
     final String displayTitle;
     final String displayIcon;
-    final String displaySubtitle; // Variable extra para el subtítulo
+    final String displaySubtitle;
 
     if (isIncome) {
-      // Si es Ingreso, el título es la Descripción, el ícono es 💵, y no hay subtítulo extra.
-      // Usamos 'Ingreso' como fallback si la descripción está vacía.
       displayTitle = transaction.description.isNotEmpty
           ? transaction.description
           : 'Ingreso';
       displayIcon = '💵';
-      displaySubtitle = ''; // Los ingresos no tienen categoría como subtítulo
+      displaySubtitle = '';
     } else {
-      // Si es Gasto, el título es la Categoría, el ícono es el de la categoría.
       displayTitle = category.title;
       displayIcon = category.icon;
-      // El subtítulo puede ser la descripción de la transacción (si existe)
       displaySubtitle = transaction.description;
     }
-    // --- FIN LÓGICA MODIFICADA ---
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -55,10 +53,8 @@ class TransactionListItem extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey.shade100,
-          // 2. Usamos el ícono de la categoría
           child: Text(displayIcon, style: const TextStyle(fontSize: 24)),
         ),
-        // 3. Usamos el título de la categoría
         title: Text(
           displayTitle,
           style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
@@ -68,7 +64,6 @@ class TransactionListItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Mostramos el subtítulo (descripción del gasto si existe)
             if (displaySubtitle.isNotEmpty && !isIncome) ...[
               Text(
                 displaySubtitle,
@@ -78,16 +73,39 @@ class TransactionListItem extends StatelessWidget {
               ),
               const SizedBox(height: 4),
             ],
-            // Siempre mostramos la fecha
             Text(
               DateFormat('d MMM, yyyy').format(transaction.date),
               style: AppTextStyles.small.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
-        trailing: Text(
-          '$amountSign\$${transaction.amount.toStringAsFixed(0)}',
-          style: AppTextStyles.heading.copyWith(color: amountColor),
+        // --- SECCIÓN MODIFICADA: Empaquetamos monto y botones en un Row compacto ---
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$amountSign\$${transaction.amount.toStringAsFixed(0)}',
+              style: AppTextStyles.body.copyWith(
+                color: amountColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(width: 20),
+            // Botón Lápiz (Editar)
+            IconButton(
+              icon: const Icon(
+                Icons.edit_outlined,
+                color: Color.fromARGB(255, 33, 91, 35),
+                size: 30,
+              ),
+              onPressed: () => onEdit(
+                transaction.id,
+              ), // <-- Envía el ID directo al invocarlo
+              constraints: const BoxConstraints(),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+          ],
         ),
       ),
     );

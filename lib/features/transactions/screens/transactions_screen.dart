@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Asegúrate de tener este import
+import 'package:FinEdu/features/transactions/widgets/new_transaction_modal.dart';
 import '../../../common/theme/app_colors.dart';
 import '../../../common/theme/app_text_styles.dart';
 import '../../../data/services/category_service.dart';
@@ -44,7 +45,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     print("TransactionsScreen: Refrescando datos...");
     // Muestra el spinner brevemente
     if (mounted) {
-       setState(() { _isLoading = true; });
+      setState(() {
+        _isLoading = true;
+      });
     }
     // Vuelve a llamar a la función que busca los datos
     _fetchData();
@@ -54,7 +57,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   Future<void> _fetchData() async {
     // Ponemos isLoading a true si no estamos ya cargando (evita doble spinner en refresh)
     if (mounted && !_isLoading) {
-       setState(() { _isLoading = true; });
+      setState(() {
+        _isLoading = true;
+      });
     }
 
     try {
@@ -67,7 +72,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       final categories = results[1] as List<Category>;
 
       // --- PRINT #1: ¿Cuántas transacciones llegaron de la API? ---
-      print("TRANSACTIONS_SCREEN - _fetchData: Recibidas ${transactions.length} transacciones de la API.");
+      print(
+        "TRANSACTIONS_SCREEN - _fetchData: Recibidas ${transactions.length} transacciones de la API.",
+      );
       // -----------------------------------------------------------
 
       if (mounted) {
@@ -75,25 +82,40 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         // Aplicamos el filtro ANTES de setState para que la lista inicial sea correcta
         List<Transaction> initialFilteredList;
         switch (_selectedFilter) {
-          case 'Ingresos': initialFilteredList = transactions.where((t) => t.type == TransactionType.ingreso).toList(); break;
-          case 'Gastos': initialFilteredList = transactions.where((t) => t.type == TransactionType.gasto).toList(); break;
-          default: initialFilteredList = transactions; break;
+          case 'Ingresos':
+            initialFilteredList = transactions
+                .where((t) => t.type == TransactionType.ingreso)
+                .toList();
+            break;
+          case 'Gastos':
+            initialFilteredList = transactions
+                .where((t) => t.type == TransactionType.gasto)
+                .toList();
+            break;
+          default:
+            initialFilteredList = transactions;
+            break;
         }
-        
+
         // --- PRINT #2: ¿Cuántas quedaron después del filtro inicial? ---
-        print("TRANSACTIONS_SCREEN - _fetchData: Lista filtrada inicial tiene ${initialFilteredList.length} items.");
+        print(
+          "TRANSACTIONS_SCREEN - _fetchData: Lista filtrada inicial tiene ${initialFilteredList.length} items.",
+        );
         // -------------------------------------------------------------
 
         setState(() {
           _allTransactions = transactions;
-          _filteredTransactions = initialFilteredList; // Usamos la lista pre-filtrada
+          _filteredTransactions =
+              initialFilteredList; // Usamos la lista pre-filtrada
           _categoryMap = categoryMap;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
         print('Error al cargar datos en TransactionsScreen: $e');
       }
     }
@@ -101,27 +123,36 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   // Lógica para aplicar el filtro (separada para reutilizar)
   void _applyFilter(String filter, List<Transaction> sourceList) {
-     switch (filter) {
-        case 'Ingresos':
-          _filteredTransactions = sourceList.where((t) => t.type == TransactionType.ingreso).toList();
-          break;
-        case 'Gastos':
-          _filteredTransactions = sourceList.where((t) => t.type == TransactionType.gasto).toList();
-          break;
-        default: // 'Todos'
-          _filteredTransactions = sourceList;
-          break;
-      }
+    switch (filter) {
+      case 'Ingresos':
+        _filteredTransactions = sourceList
+            .where((t) => t.type == TransactionType.ingreso)
+            .toList();
+        break;
+      case 'Gastos':
+        _filteredTransactions = sourceList
+            .where((t) => t.type == TransactionType.gasto)
+            .toList();
+        break;
+      default: // 'Todos'
+        _filteredTransactions = sourceList;
+        break;
+    }
   }
 
   // Lógica para cambiar el filtro y actualizar la UI
   void _filterTransactions(String filter) {
     setState(() {
       _selectedFilter = filter;
-      _applyFilter(filter, _allTransactions); // Aplicamos filtro a la lista completa
-      
+      _applyFilter(
+        filter,
+        _allTransactions,
+      ); // Aplicamos filtro a la lista completa
+
       // --- PRINT #3: ¿Cuántas quedaron después de cambiar el filtro? ---
-      print("TRANSACTIONS_SCREEN - _filterTransactions: Lista filtrada AHORA tiene ${_filteredTransactions.length} items.");
+      print(
+        "TRANSACTIONS_SCREEN - _filterTransactions: Lista filtrada AHORA tiene ${_filteredTransactions.length} items.",
+      );
       // ---------------------------------------------------------------
     });
   }
@@ -134,28 +165,70 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         children: [
           _buildHeader(context),
           // Mostramos el resumen solo si no está cargando y hay transacciones
-          if (!_isLoading && _allTransactions.isNotEmpty) 
-             _buildSummaryCard(_allTransactions),
-          
+          if (!_isLoading && _allTransactions.isNotEmpty)
+            _buildSummaryCard(_allTransactions),
+
           // Muestra spinner o la lista
           _isLoading
-              ? const Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
               : Expanded(
                   // Muestra mensaje si la lista filtrada está vacía
-                  child: _filteredTransactions.isEmpty 
-                      ? Center(child: Text('No hay transacciones para mostrar.', style: AppTextStyles.body))
+                  child: _filteredTransactions.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No hay transacciones para mostrar.',
+                            style: AppTextStyles.body,
+                          ),
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: _filteredTransactions.length,
                           itemBuilder: (context, index) {
-                            // --- PRINT #4: ¿Se está intentando construir la lista? ---
-                            print("TRANSACTIONS_SCREEN - itemBuilder: Construyendo item $index");
-                            // --------------------------------------------------------
+                            print(
+                              "TRANSACTIONS_SCREEN - itemBuilder: Construyendo item $index",
+                            );
+
                             final transaction = _filteredTransactions[index];
-                            final category = _categoryMap[transaction.categoryId] ?? Category(id: 0, title: 'Desconocida', icon: '❓');
+                            final category =
+                                _categoryMap[transaction.categoryId] ??
+                                Category(
+                                  id: 0,
+                                  title: 'Desconocida',
+                                  icon: '❓',
+                                );
+
                             return TransactionListItem(
                               transaction: transaction,
                               category: category,
+                              onEdit: (idToEdit) async {
+                                final bool?
+                                result = await showModalBottomSheet<bool>(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => NewTransactionModal(
+                                    // Pásale el ID del periodo actual (puedes usar el de la misma transacción si no tienes la variable global a la mano)
+                                    incomePeriodId: 1,
+                                    transactionIdToEdit:
+                                        idToEdit, // <-- Esto le dice al modal que vaya al backend por el GET
+                                  ),
+                                );
+
+                                // Si el modal devuelve 'true', significa que el PUT se ejecutó con éxito
+                                if (result == true) {
+                                  _fetchData(); // Volvemos a recargar los datos de la API para refrescar la lista
+                                }
+                              },
+                              // <-- 2. CONFIGURAMOS EL BOTÓN DE LA BASURA (ELIMINAR)
+                              onDelete: () {
+                                // Por ahora lo dejamos vacío para que no te marque error,
+                                // luego ponemos aquí tu diálogo de confirmación para borrar.
+                                print(
+                                  "Se intentó eliminar la transacción con ID: ${transaction.id}",
+                                );
+                              },
                             );
                           },
                         ),
@@ -170,8 +243,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16, // Espacio para la barra de estado
-        left: 16, right: 16, bottom: 16,
+        top:
+            MediaQuery.of(context).padding.top +
+            16, // Espacio para la barra de estado
+        left: 16,
+        right: 16,
+        bottom: 16,
       ),
       decoration: BoxDecoration(
         color: AppColors.accent2.withOpacity(0.8), // Color del header
@@ -183,17 +260,27 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Movimientos', style: AppTextStyles.title.copyWith(color: AppColors.primary)),
+              Text(
+                'Movimientos',
+                style: AppTextStyles.title.copyWith(color: AppColors.primary),
+              ),
               SvgPicture.asset(
-                  'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
-                  height: 40,
-                  colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn)),
+                'assets/img/svg/Logo.1.svg', // Asegúrate que la ruta sea correcta
+                height: 40,
+                colorFilter: ColorFilter.mode(
+                  AppColors.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           // Dropdown de filtro
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.8),
               borderRadius: BorderRadius.circular(30),
@@ -204,11 +291,16 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                 value: _selectedFilter,
                 icon: const Icon(Icons.keyboard_arrow_down),
                 items: _filterOptions.map((String value) {
-                  return DropdownMenuItem<String>(value: value, child: Text(value));
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
                 }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    _filterTransactions(newValue); // Llama a la función de filtro
+                    _filterTransactions(
+                      newValue,
+                    ); // Llama a la función de filtro
                   }
                 },
               ),
@@ -220,8 +312,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _buildSummaryCard(List<Transaction> transactions) {
-    double totalIngresos = transactions.where((t) => t.type == TransactionType.ingreso).fold(0, (sum, t) => sum + t.amount);
-    double totalGastos = transactions.where((t) => t.type == TransactionType.gasto).fold(0, (sum, t) => sum + t.amount);
+    double totalIngresos = transactions
+        .where((t) => t.type == TransactionType.ingreso)
+        .fold(0, (sum, t) => sum + t.amount);
+    double totalGastos = transactions
+        .where((t) => t.type == TransactionType.gasto)
+        .fold(0, (sum, t) => sum + t.amount);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -237,19 +333,34 @@ class TransactionsScreenState extends State<TransactionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Total transacciones', style: AppTextStyles.body),
-                Text(transactions.length.toString(), style: AppTextStyles.subtitle),
+                Text(
+                  transactions.length.toString(),
+                  style: AppTextStyles.subtitle,
+                ),
               ],
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('⬆ \$${totalIngresos.toStringAsFixed(0)}', style: AppTextStyles.body.copyWith(color: Colors.green.shade700, fontWeight: FontWeight.bold)),
-                Text('⬇ \$${totalGastos.toStringAsFixed(0)}', style: AppTextStyles.body.copyWith(color: Colors.red.shade600, fontWeight: FontWeight.bold)),
+                Text(
+                  '⬆ \$${totalIngresos.toStringAsFixed(0)}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '⬇ \$${totalGastos.toStringAsFixed(0)}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
     );
   }
-} 
+}

@@ -8,8 +8,8 @@ import '../../common/routing/app_routes.dart';
 class ApiService {
   // Asegúrate de que esta URL sea la correcta para tu teléfono
   static const String _baseUrl =
-      //'http://137.184.85.162:8000'; // Usa la IP de tu PC
-      'http://192.168.1.9:8000';
+      'http://10.16.71.39:8000'; // Usa la IP de tu PC
+  //'http://192.168.1.9:8000';
   final _storage =
       const FlutterSecureStorage(); // Usamos storage directamente aquí
 
